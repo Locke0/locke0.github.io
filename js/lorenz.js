@@ -48,6 +48,33 @@
   var revealAlpha = 0;
   var animating = false;
 
+  // Auto-wander state
+  var wanderX = 0, wanderY = 0;
+  var wanderTargetX = 0, wanderTargetY = 0;
+  var wanderInited = false;
+  var wanderSpeed = 0.008; // how fast wander catches its target
+  var wanderInterval = 0; // timer for picking new targets
+  var isTouching = false;
+  var touchFadeTimer = 0; // frames after touch ends before resuming wander
+
+  function pickWanderTarget() {
+    var w = header.clientWidth, h = header.clientHeight;
+    var pad = 0.15; // keep away from edges
+    wanderTargetX = w * pad + Math.random() * w * (1 - 2 * pad);
+    wanderTargetY = h * pad + Math.random() * h * (1 - 2 * pad);
+  }
+
+  function initWander() {
+    if (wanderInited) return;
+    wanderInited = true;
+    var w = header.clientWidth, h = header.clientHeight;
+    wanderX = w * 0.3 + Math.random() * w * 0.4;
+    wanderY = h * 0.3 + Math.random() * h * 0.4;
+    pickWanderTarget();
+    wanderInterval = setInterval(pickWanderTarget, 4000 + Math.random() * 3000);
+  }
+
+  // Desktop events
   header.addEventListener("mouseenter", function () {
     isHovering = true; startAnim();
   });
@@ -58,6 +85,31 @@
     var r = header.getBoundingClientRect();
     mouseX = e.clientX - r.left; mouseY = e.clientY - r.top;
     startAnim();
+  });
+
+  // Touch events
+  header.addEventListener("touchstart", function (e) {
+    var touch = e.touches[0];
+    var r = header.getBoundingClientRect();
+    mouseX = touch.clientX - r.left;
+    mouseY = touch.clientY - r.top;
+    isTouching = true;
+    touchFadeTimer = 0;
+    startAnim();
+  }, { passive: true });
+  header.addEventListener("touchmove", function (e) {
+    var touch = e.touches[0];
+    var r = header.getBoundingClientRect();
+    mouseX = touch.clientX - r.left;
+    mouseY = touch.clientY - r.top;
+  }, { passive: true });
+  header.addEventListener("touchend", function () {
+    isTouching = false;
+    touchFadeTimer = 120; // ~2s at 60fps before wander resumes fully
+  });
+  header.addEventListener("touchcancel", function () {
+    isTouching = false;
+    touchFadeTimer = 120;
   });
 
   function startAnim() { if (!animating) { animating = true; requestAnimationFrame(animate); } }
@@ -78,7 +130,7 @@
 
   var img = new Image();
   img.crossOrigin = "anonymous";
-  img.onload = function () { renderAll(); window.addEventListener("resize", debounce(renderAll, 200)); };
+  img.onload = function () { renderAll(); window.addEventListener("resize", debounce(renderAll, 200)); startAnim(); };
   img.src = imgUrl;
 
   // --- Header text → render onto canvases ---
@@ -305,34 +357,71 @@
     ascCtx.fillStyle = fg; ascCtx.fillRect(0, h-fH, w, fH);
   }
 
-  // --- Animation: hover reveal only, no ripples ---
+  // --- Animation: auto-wander + hover/touch reveal ---
   function animate() {
     var w = header.clientWidth, h = header.clientHeight;
     rvCtx.clearRect(0, 0, w, h);
-    var src = realCanvas; // always reveal real image
+    var src = realCanvas;
 
-    // Smooth fade in/out
-    if (isHovering) {
-      revealAlpha += (1 - revealAlpha) * 0.04;
+    initWander();
+
+    // Determine if user is actively interacting
+    var interacting = isHovering || isTouching;
+
+    // Decrement touch fade timer
+    if (touchFadeTimer > 0) touchFadeTimer--;
+
+    // Update wander position (always drifts toward its target)
+    wanderX += (wanderTargetX - wanderX) * wanderSpeed;
+    wanderY += (wanderTargetY - wanderY) * wanderSpeed;
+
+    // Pick new target if wander is close to current target
+    if (Math.hypot(wanderX - wanderTargetX, wanderY - wanderTargetY) < 20) {
+      pickWanderTarget();
+    }
+
+    // Determine the effective reveal position
+    var activeX, activeY, activeEase;
+    if (interacting && mouseX >= 0) {
+      // User is interacting — chase the cursor/touch point
+      activeX = mouseX;
+      activeY = mouseY;
+      activeEase = isHovering ? 0.04 : 0.06; // slightly faster for touch
+    } else if (touchFadeTimer > 0 && mouseX >= 0) {
+      // Recently stopped touching — blend toward wander
+      var blend = touchFadeTimer / 120;
+      activeX = wanderX + (mouseX - wanderX) * blend;
+      activeY = wanderY + (mouseY - wanderY) * blend;
+      activeEase = 0.03;
     } else {
-      revealAlpha *= 0.96;
+      // Idle — follow wander
+      activeX = wanderX;
+      activeY = wanderY;
+      activeEase = 0.02;
     }
 
-    // Lag cursor
-    if (mouseX >= 0 && isHovering) {
-      if (cursorX < 0) { cursorX = mouseX; cursorY = mouseY; }
-      cursorX += (mouseX - cursorX) * 0.03;
-      cursorY += (mouseY - cursorY) * 0.03;
-      if (!trail.length || Math.hypot(cursorX - trail[trail.length-1].x, cursorY - trail[trail.length-1].y) > 2) {
-        trail.push({ x: cursorX, y: cursorY, age: 0 });
-      }
-      if (trail.length > 60) trail.shift();
-    } else if (!isHovering && revealAlpha < 0.01) {
-      cursorX = -1; cursorY = -1;
-      trail.length = 0;
+    // Smooth cursor movement toward active target
+    if (cursorX < 0) { cursorX = activeX; cursorY = activeY; }
+    cursorX += (activeX - cursorX) * activeEase;
+    cursorY += (activeY - cursorY) * activeEase;
+
+    // Also nudge wander toward touch/mouse when interacting so handoff is smooth
+    if (interacting && mouseX >= 0) {
+      wanderX += (mouseX - wanderX) * 0.02;
+      wanderY += (mouseY - wanderY) * 0.02;
     }
 
-    if (revealAlpha > 0.005 && (cursorX >= 0 || trail.length > 0)) {
+    // Reveal alpha — stronger when interacting, softer when wandering
+    var targetAlpha = interacting ? 1 : 0.55;
+    revealAlpha += (targetAlpha - revealAlpha) * 0.03;
+
+    // Trail
+    if (!trail.length || Math.hypot(cursorX - trail[trail.length-1].x, cursorY - trail[trail.length-1].y) > 2) {
+      trail.push({ x: cursorX, y: cursorY, age: 0 });
+    }
+    if (trail.length > 60) trail.shift();
+
+    if (revealAlpha > 0.005) {
       // Wake trail
       for (var i = trail.length - 1; i >= 0; i--) {
         trail[i].age++;
@@ -384,8 +473,8 @@
       }
     }
 
-    if (revealAlpha > 0.005) requestAnimationFrame(animate);
-    else { animating = false; rvCtx.clearRect(0, 0, w, h); }
+    // Always keep animating (wander never stops)
+    requestAnimationFrame(animate);
   }
 
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
