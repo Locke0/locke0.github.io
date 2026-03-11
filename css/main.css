@@ -732,8 +732,8 @@ dt {
   descent-override: 22%;
   line-gap-override: 0%;
   size-adjust: 95%;
-  src: url("/blog/fonts/FacultyGlyphic-Regular.woff2") format("woff2"); /* If you have woff2 version */
-  /* url("/blog/fonts/FacultyGlyphic-Regular.ttf") format("truetype"), */
+  src: url("/fonts/FacultyGlyphic-Regular.woff2") format("woff2"); /* If you have woff2 version */
+  /* url("/fonts/FacultyGlyphic-Regular.ttf") format("truetype"), */
 }
 
 
