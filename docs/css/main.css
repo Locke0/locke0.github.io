@@ -912,7 +912,8 @@ hr::after {
 
 /* Publication list with index numbers */
 #publications li,
-#projects li {
+#projects li,
+#posts li {
   position: relative;
   counter-increment: item-counter;
   padding: 0.6em 0;
@@ -920,19 +921,22 @@ hr::after {
 }
 
 #publications li:last-child,
-#projects li:last-child {
+#projects li:last-child,
+#posts li:last-child {
   border-bottom: none;
 }
 
 #publications ul,
-#projects ul {
+#projects ul,
+#posts ul {
   counter-reset: item-counter;
   list-style: none;
   padding-left: 0;
 }
 
 #publications li::before,
-#projects li::before {
+#projects li::before,
+#posts li::before {
   content: "[" counter(item-counter, decimal-leading-zero) "] ";
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -942,12 +946,34 @@ hr::after {
 
 /* Terminal-style containers for sections */
 #publications,
-#projects {
+#projects,
+#posts {
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 4px;
   padding: 1em 1.2em;
   margin: 1.5em 0;
   background: rgba(255,255,255,0.015);
+}
+
+/* Scrollable section lists — show ~4 items */
+#publications ul,
+#projects ul,
+#posts ul {
+  max-height: 20em;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+#publications ul::-webkit-scrollbar,
+#projects ul::-webkit-scrollbar,
+#posts ul::-webkit-scrollbar {
+  width: 4px;
+}
+#publications ul::-webkit-scrollbar-thumb,
+#projects ul::-webkit-scrollbar-thumb,
+#posts ul::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
 }
 
 /* Homepage links — monospace */

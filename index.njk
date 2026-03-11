@@ -28,6 +28,8 @@ date: Last Modified
       <div id="publications">
         <h3>papers</h3>
         <ul>
+          <li><a href="https://multinet.ai/static/pages/Multinetv1.html">MultiNet v1.0: A Comprehensive Benchmark for Evaluating Multimodal Reasoning and Action Models Across Diverse Domains</a> <span class="meta">Mar 2026</span><br><span class="pub-links">[<a href="https://multinet.ai/">project</a>] [<a href="https://github.com/ManifoldRG/MultiNet">src</a>]</span>
+          </li>
           <li><a href="https://multinet.ai">An Open-Source Software Toolkit & Benchmark Suite for the Evaluation and Adaptation of Multimodal Action Models</a> <span class="meta">Jun 2025</span><br><span class="pub-links">[<a href="https://multinet.ai/">project</a>] [<a href="https://arxiv.org/abs/2506.09172">arxiv</a>]</span>
           </li>
           <li><a href="https://multinet.ai/static/pages/Multinetv02.html">Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments</a> <span class="meta">Jun 2025</span><br><span class="pub-links">[<a href="https://multinet.ai/">project</a>] [<a href="https://arxiv.org/abs/2505.05540">arxiv</a>] [<a href="https://github.com/ManifoldRG/MultiNet?tab=readme-ov-file">src</a>]</span>
@@ -46,6 +48,20 @@ date: Last Modified
           <li><strong>Software Control</strong> <span class="meta">2025</span><br>Agents that navigate and control arbitrary software environments.<br><span class="pub-links">[<a href="https://github.com/ManifoldRG/software-control">src</a>]</span></li>
         </ul>
       </div>
+
+      {% set postslist = collections.posts %}
+      {% if postslist | length %}
+      <hr>
+
+      <div id="posts">
+        <h3>posts</h3>
+        <ul>
+        {% for post in postslist | reverse %}
+          <li><a href="{{ post.url | url }}">{% if post.data.title %}{{ post.data.title }}{% else %}<code>{{ post.url }}</code>{% endif %}</a> <span class="meta">{{ post.date | readableDate }}</span></li>
+        {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
     </div>
 
