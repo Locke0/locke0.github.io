@@ -1,0 +1,13 @@
+{
+  "version": "https://jsonfeed.org/version/1",
+  "title": "/home$",
+  "home_page_url": "https://locke0.github.io",
+  "feed_url": "https://locke0.github.io/feed/feed.json",
+  "description": "projects, ideas, solutions",
+  "author": {
+    "name": "Yangyue (Locke) Wang",
+    "url": ""
+  },
+  "items": [
+  ]
+}
