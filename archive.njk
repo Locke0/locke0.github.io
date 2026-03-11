@@ -9,7 +9,9 @@ eleventyNavigation:
   order: 2
 ---
 
-<h1>Posts</h1>
-
 {% set postslist = collections.posts %}
-{% include "postslist.njk" %}
+{% if postslist | length > 0 %}
+  {% include "postslist.njk" %}
+{% else %}
+  <p class="coming-soon">0 entries found. coming soon.</p>
+{% endif %}

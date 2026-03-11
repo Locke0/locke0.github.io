@@ -3,5 +3,25 @@ permalink: /favicon.svg
 eleventyExcludeFromCollections: true
 ---
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<text y=".9em" font-size="90">🌲</text>
+<rect width="100" height="100" rx="16" fill="#0a0a0c"/>
+<defs>
+  <linearGradient id="yg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#72dec2"/>
+    <stop offset="70%" stop-color="#3a9e7e"/>
+    <stop offset="100%" stop-color="#d4a056"/>
+  </linearGradient>
+</defs>
+<!-- Y/tree: organic branches curving outward, converging to trunk -->
+<path d="M50 90 L50 52 Q38 35 20 14" fill="none" stroke="url(#yg)" stroke-width="5" stroke-linecap="round"/>
+<path d="M50 52 Q62 35 80 14" fill="none" stroke="url(#yg)" stroke-width="5" stroke-linecap="round"/>
+<!-- Secondary branches (smaller, organic) -->
+<path d="M38 36 Q30 28 22 30" fill="none" stroke="#72dec2" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+<path d="M62 36 Q70 28 78 30" fill="none" stroke="#72dec2" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+<!-- Leaf/growth dots at branch tips -->
+<circle cx="20" cy="14" r="4" fill="#72dec2" opacity="0.7"/>
+<circle cx="80" cy="14" r="4" fill="#72dec2" opacity="0.7"/>
+<circle cx="22" cy="30" r="2.5" fill="#72dec2" opacity="0.4"/>
+<circle cx="78" cy="30" r="2.5" fill="#72dec2" opacity="0.4"/>
+<!-- Warm root accent -->
+<circle cx="50" cy="90" r="3" fill="#d4a056" opacity="0.5"/>
 </svg>

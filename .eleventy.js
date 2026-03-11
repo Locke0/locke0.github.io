@@ -309,6 +309,7 @@ module.exports = function (eleventyConfig) {
       return posts;
     }
     return posts.filter((p) => {
+      if (p.data.draft === true) return false;
       return !p.data.tags || !p.data.tags.includes("Coming Soon");
     });
   });
