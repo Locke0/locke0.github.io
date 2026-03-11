@@ -6,9 +6,7 @@ function showDraft(data) {
   if (isDev) return true;
   
   // In production, only show published posts
-  const isDraft = "draft" in data && data.draft !== false;
-  // A post is a draft only if explicitly set to true
-  // const isDraft = data.draft === true;
+  const isDraft = data.draft === true;
   const isPostInFuture =
     "scheduled" in data ? data.scheduled > todaysDate : false;
   
@@ -25,10 +23,11 @@ module.exports = () => {
         return showDraft(data) ? false : true;
       },
       permalink: (data) => {
-        // If post should be shown, use its permalink
         // If post should be hidden, don't generate a page
-        return showDraft(data) ? data.permalink : false;
-      },      
+        // If shown, return undefined to use Eleventy's default permalink
+        if (!showDraft(data)) return false;
+        return data.permalink;
+      },
     },
     tags: ["posts"],
   };
