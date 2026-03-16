@@ -832,7 +832,7 @@
   // --- Main animation loop ---
   var frameCount = 0;
   var cometTimer = 0;
-  var nextCometAt = 300 + Math.floor(Math.random() * 400); // every 5-12 sec
+  var nextCometAt = 1; // first comet fires immediately on load
 
   function animate() {
     var w = header.clientWidth, h = header.clientHeight;
