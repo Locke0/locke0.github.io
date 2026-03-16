@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#0a0a0c"/>
+<defs>
+  <linearGradient id="yg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#72dec2"/>
+    <stop offset="70%" stop-color="#3a9e7e"/>
+    <stop offset="100%" stop-color="#d4a056"/>
+  </linearGradient>
+  <filter id="sketch" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="4" seed="3" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="sketchLight" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="3" seed="7" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</defs>
+
+<!-- Equations -->
+<g filter="url(#sketch)">
+  <text font-family="Georgia, serif" font-size="12" fill="#72dec2" opacity="0.22" font-style="italic">
+    <tspan x="35" y="50">p(x|z)</tspan>
+    <tspan x="1100" y="45">dL/dx</tspan>
+    <tspan x="40" y="590">self | world</tspan>
+    <tspan x="1050" y="590">dS/dt >= 0</tspan>
+  </text>
+</g>
+<g filter="url(#sketch)">
+  <text font-family="Georgia, serif" font-size="11" fill="#8890a8" opacity="0.16" font-style="italic">
+    <tspan x="50" y="320">S=k ln W</tspan>
+    <tspan x="1060" y="315">E=mc^2</tspan>
+    <tspan x="200" y="180">dx/dt=f(x)</tspan>
+    <tspan x="900" y="480">cogito ergo sum</tspan>
+  </text>
+</g>
+
+<!-- Y-tree — dead center -->
+<g transform="translate(400, 108) scale(1.0)" filter="url(#sketch)">
+  <path d="M200 362 C200 308 200 258 200 210 Q148 140 78 52" fill="none" stroke="url(#yg)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M200 210 Q252 138 322 52" fill="none" stroke="url(#yg)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M148 146 Q116 113 86 120" fill="none" stroke="#72dec2" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
+  <path d="M252 142 Q284 110 314 118" fill="none" stroke="#72dec2" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
+  <ellipse cx="78" cy="52" rx="16" ry="14" fill="#72dec2" opacity="0.6"/>
+  <ellipse cx="322" cy="52" rx="14" ry="16" fill="#72dec2" opacity="0.6"/>
+  <ellipse cx="86" cy="120" rx="9" ry="8" fill="#72dec2" opacity="0.3"/>
+  <ellipse cx="314" cy="118" rx="8" ry="9" fill="#72dec2" opacity="0.3"/>
+  <ellipse cx="200" cy="362" rx="12" ry="10" fill="#d4a056" opacity="0.4"/>
+</g>
+
+<!-- Bottom accent -->
+<path d="M0 618 Q200 612 400 620 Q600 626 800 616 Q1000 610 1200 622 L1200 630 L0 630 Z" fill="url(#yg)" opacity="0.10" filter="url(#sketchLight)"/>
+</svg>

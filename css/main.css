@@ -1038,3 +1038,22 @@ hr::after {
   color: var(--link);
   opacity: 0.6;
 }
+
+/* Footer subscribe line */
+.subscribe-line {
+  font-size: 0.75rem;
+  margin-bottom: 0.5em;
+}
+.subscribe-line a {
+  text-decoration: none;
+}
+.subscribe-line a:hover {
+  text-decoration: underline;
+}
+
+/* About page statement — monospace like home/posts */
+.about-statement p {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-subtle);
+}

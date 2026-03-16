@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<rect width="400" height="400" rx="64" fill="#0a0a0c"/>
+<defs>
+  <linearGradient id="yg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#72dec2"/>
+    <stop offset="70%" stop-color="#3a9e7e"/>
+    <stop offset="100%" stop-color="#d4a056"/>
+  </linearGradient>
+  <filter id="sketch" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="4" seed="3" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</defs>
+<!-- Y-tree, hand-drawn — wobbly organic strokes -->
+<g filter="url(#sketch)">
+  <path d="M198 362 C199 310 201 260 202 210 Q150 142 82 58" fill="none" stroke="url(#yg)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M202 210 Q250 138 318 58" fill="none" stroke="url(#yg)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Secondary branches -->
+  <path d="M150 146 Q118 115 90 122" fill="none" stroke="#72dec2" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
+  <path d="M250 142 Q282 110 310 118" fill="none" stroke="#72dec2" stroke-width="7" stroke-linecap="round" opacity="0.5"/>
+  <!-- Leaf dots — imperfect -->
+  <ellipse cx="82" cy="58" rx="17" ry="15" fill="#72dec2" opacity="0.65"/>
+  <ellipse cx="318" cy="58" rx="15" ry="17" fill="#72dec2" opacity="0.65"/>
+  <ellipse cx="90" cy="122" rx="10" ry="9" fill="#72dec2" opacity="0.35"/>
+  <ellipse cx="310" cy="118" rx="9" ry="10" fill="#72dec2" opacity="0.35"/>
+  <!-- Root -->
+  <ellipse cx="198" cy="362" rx="13" ry="11" fill="#d4a056" opacity="0.45"/>
+</g>
+</svg>

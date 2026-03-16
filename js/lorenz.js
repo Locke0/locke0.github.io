@@ -60,7 +60,19 @@
     "dN/dt=rN(1-N/K)","\u2202c/\u2202t=D\u2207\u00B2c",
     // Deep learning
     "\u2207L","\u2202L/\u2202\u03B8","QK\u1D40/\u221Ad",
-    "dx/dt=f_\u03B8(x)","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L"
+    "dx/dt=f_\u03B8(x)","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
+    // Agency / meaning / existence / perception — famous equations
+    "P(H|E)\u221DP(E|H)P(H)",         // Bayes' theorem — perception
+    "\u03B4\u222BLdt=0",               // Principle of least action — agency
+    "da/dt=\u03C0(a)",                 // Active inference — agency
+    "\u2202\u03BC/\u2202t=f(\u03BC,b)",// Markov blanket — self/world boundary
+    "\u0394G=\u0394H-T\u0394S",        // Gibbs free energy — life/meaning
+    "F=D_KL+H",                        // Free energy principle — perception
+    "dS/dt\u22650",                    // Second law — arrow of time
+    "\u222B\u03C8*\u03C8 d\u00B3x=1",  // Born rule — observation
+    "R\u03BC\u03BD-\u00BDg\u03BC\u03BDR=8\u03C0T\u03BC\u03BD", // Einstein field — reality
+    "\u27E8\u03C8|A|\u03C8\u27E9",     // Expectation — measurement
+    "\u2202S/\u2202t+H=0"              // Hamilton-Jacobi — optimal action
   ];
 
   // ABOUT — information theory, network topology, geometry, self-reference
@@ -171,7 +183,11 @@
     "x\u0307=Ax+Bu","A\u1D40P+PA-PBR\u207B\u00B9B\u1D40P+Q=0",
     "dx/dt=f(x)","x\u2099\u208A\u2081=rx(1-x)",
     "p(x\u209C\u208A\u2081|x\u209C)","x\u0302=g(z)",
-    "observer \u2192 |obs\u27E9"
+    "observer \u2192 |obs\u27E9",
+    "P(H|E)\u221DP(E|H)P(H)","\u03B4\u222BLdt=0","da/dt=\u03C0(a)",
+    "\u2202\u03BC/\u2202t=f(\u03BC,b)","\u0394G=\u0394H-T\u0394S",
+    "F=D_KL+H","dS/dt\u22650","\u222B\u03C8*\u03C8 d\u00B3x=1",
+    "\u27E8\u03C8|A|\u03C8\u27E9","\u2202S/\u2202t+H=0"
   ]);
 
   function srand(s) { var x = Math.sin(s) * 10000; return x - Math.floor(x); }
@@ -305,7 +321,13 @@
 
   // Matrix drip: a single slow-falling column of symbols
   function createMatrixDrop(w, h) {
-    var x = Math.random() * w;
+    // Bias x toward darker columns (image content areas)
+    var x, tries = 0;
+    do {
+      x = Math.random() * w;
+      var mLum = getLumAt(x, h * 0.4); // sample mid-height
+      tries++;
+    } while (mLum > 0.6 && Math.random() > (1 - mLum) * 1.5 && tries < 6);
     var length = 3 + Math.floor(Math.random() * 6);
     var chars = [];
     for (var i = 0; i < length; i++) chars.push(symbols[Math.floor(Math.random() * symbols.length)]);
@@ -318,7 +340,7 @@
       cycleTimer: 0,
       cycleInterval: 80 + Math.floor(Math.random() * 200),
       blue: Math.random() < 0.20,
-      alpha: 0.18 + Math.random() * 0.20
+      alpha: 0.24 + Math.random() * 0.24
     };
   }
 
@@ -326,13 +348,20 @@
   function createDrifter(w, h) {
     var angle = Math.random() * Math.PI * 2;
     var speed = 0.01 + Math.random() * 0.03; // barely moving
+    // Bias spawn toward darker (content-rich) areas via rejection sampling
+    var dx, dy, tries = 0;
+    do {
+      dx = Math.random() * w; dy = Math.random() * h;
+      var dLum = getLumAt(dx, dy);
+      tries++;
+    } while (dLum > 0.5 && Math.random() > (1 - dLum) * 1.5 && tries < 8);
     return {
-      x: Math.random() * w, y: Math.random() * h,
+      x: dx, y: dy,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       glyph: symbols[Math.floor(Math.random() * symbols.length)],
       fontSize: 7 + Math.floor(Math.random() * 3),
-      alpha: 0.10 + Math.random() * 0.20,
+      alpha: 0.15 + Math.random() * 0.22,
       age: 0, maxAge: 600 + Math.floor(Math.random() * 1200),
       phase: Math.random() * Math.PI * 2,
       breathSpeed: 0.0008 + Math.random() * 0.002,
@@ -342,16 +371,34 @@
 
   // Comet: rare, bright diagonal streak with long trailing tail + sparks
   function createComet(w, h) {
-    var angleDeg = Math.random() * 360;
-    if (Math.random() < 0.6) angleDeg = 190 + Math.random() * 70;
-    var angle = angleDeg * Math.PI / 180;
-    var speed = 0.3 + Math.random() * 0.4; // slightly slower for drama
-    var length = 15 + Math.floor(Math.random() * 20); // longer tail: 15-34 chars
+    var angleDeg, startX, startY;
+    var speed = 0.3 + Math.random() * 0.4;
+    var length = 15 + Math.floor(Math.random() * 20);
 
-    var startX, startY;
-    var cosA = Math.cos(angle), sinA = Math.sin(angle);
-    if (cosA < 0) { startX = w + 20 + Math.random() * 60; } else { startX = -20 - Math.random() * 60; }
-    startY = Math.random() * h * 0.5 + (sinA > 0 ? -50 : h * 0.3);
+    // 40% chance: "sky comet" that crosses through top-center like a shooting star
+    if (Math.random() < 0.40) {
+      // Shallow angle, mostly horizontal, crossing upper region
+      angleDeg = Math.random() < 0.5
+        ? (195 + Math.random() * 30)   // slight downward-left
+        : (340 + Math.random() * 30);  // slight downward-right
+      var angle = angleDeg * Math.PI / 180;
+      var cosA = Math.cos(angle), sinA = Math.sin(angle);
+      // Start from edge, aimed to cross through top 30% center 60% of width
+      if (cosA < 0) {
+        startX = w + 20 + Math.random() * 40;
+      } else {
+        startX = -20 - Math.random() * 40;
+      }
+      startY = h * 0.05 + Math.random() * h * 0.25; // top 5-30%
+    } else {
+      // Original behavior: random or biased diagonal
+      angleDeg = Math.random() * 360;
+      if (Math.random() < 0.6) angleDeg = 190 + Math.random() * 70;
+      var angle = angleDeg * Math.PI / 180;
+      var cosA = Math.cos(angle), sinA = Math.sin(angle);
+      if (cosA < 0) { startX = w + 20 + Math.random() * 60; } else { startX = -20 - Math.random() * 60; }
+      startY = Math.random() * h * 0.5 + (sinA > 0 ? -50 : h * 0.3);
+    }
 
     var chars = [];
     for (var i = 0; i < length; i++) chars.push(symbols[Math.floor(Math.random() * symbols.length)]);
@@ -387,8 +434,15 @@
 
   // Rain drop: single char falling straight down, fast
   function createRainDrop(w, h) {
+    // Bias toward darker columns
+    var rx, rtries = 0;
+    do {
+      rx = Math.random() * w;
+      var rLum = getLumAt(rx, h * 0.3);
+      rtries++;
+    } while (rLum > 0.6 && Math.random() > (1 - rLum) * 1.5 && rtries < 6);
     return {
-      x: Math.random() * w,
+      x: rx,
       y: -10 - Math.random() * 30,
       speed: 0.15 + Math.random() * 0.30, // slow rain
       glyph: symbols[Math.floor(Math.random() * symbols.length)],
@@ -424,9 +478,17 @@
 
   // Bright star: a symbol that flares up brightly then fades, cycles glyph
   function createBrightStar(w, h) {
+    // Bias toward darker (content-rich) areas
+    var bsx, bsy, bstries = 0;
+    do {
+      bsx = w * 0.05 + Math.random() * w * 0.9;
+      bsy = h * 0.05 + Math.random() * h * 0.9;
+      var bsLum = getLumAt(bsx, bsy);
+      bstries++;
+    } while (bsLum > 0.5 && Math.random() > (1 - bsLum) * 1.5 && bstries < 8);
     return {
-      x: w * 0.05 + Math.random() * w * 0.9,
-      y: h * 0.05 + Math.random() * h * 0.9,
+      x: bsx,
+      y: bsy,
       glyph: symbols[Math.floor(Math.random() * symbols.length)],
       fontSize: 9 + Math.floor(Math.random() * 3),
       age: 0,
@@ -481,7 +543,7 @@
         phase: Math.random() * Math.PI * 2,
         speed: 0.01 + Math.random() * 0.03, // very slow twinkle
         maxR: 0.4 + Math.random() * 1.0,
-        peakAlpha: 0.15 + Math.random() * 0.35,
+        peakAlpha: 0.22 + Math.random() * 0.40,
         blue: Math.random() < 0.3
       });
     }
@@ -677,15 +739,15 @@
         var edge3 = edgeGrid[idx3];
         var seed3 = row3 * 1000 + col3;
         var dotChance;
-        if (edge3 > 0.06) dotChance = 0.10 + edge3 * 0.5;
-        else if (dk3 > 0.15) dotChance = dk3 * 0.02;
+        if (edge3 > 0.06) dotChance = 0.12 + edge3 * 0.6;
+        else if (dk3 > 0.12) dotChance = dk3 * dk3 * 0.08;
         else continue;
         if (srand(seed3 + 30) > dotChance) continue;
 
         var x3 = col3 * sp + sp * 0.5 + (srand(seed3 + 20) - 0.5) * sp * 0.6;
         var y3 = row3 * sp + sp * 0.5 + (srand(seed3 + 21) - 0.5) * sp * 0.6;
-        var dotAlpha = edge3 > 0.06 ? 0.06 + edge3 * 0.15 : 0.02 + dk3 * 0.04;
-        var dotR = edge3 > 0.06 ? 0.5 + edge3 * 1.2 : 0.3 + dk3 * 0.4;
+        var dotAlpha = edge3 > 0.06 ? 0.09 + edge3 * 0.20 : 0.035 + dk3 * 0.06;
+        var dotR = edge3 > 0.06 ? 0.6 + edge3 * 1.3 : 0.35 + dk3 * 0.5;
 
         bCtx.fillStyle = "rgba(" + (edge3 > 0.12 ? "120,165,220" : "185,188,198") + "," + dotAlpha.toFixed(3) + ")";
         bCtx.beginPath(); bCtx.arc(x3, y3, dotR, 0, Math.PI * 2); bCtx.fill();
@@ -706,14 +768,14 @@
         var dk4 = 1 - lumGrid[idx4];
         var edge4 = edgeGrid[idx4] || 0;
 
-        if (dk4 < 0.05 && edge4 < 0.03) continue;
+        if (dk4 < 0.08 && edge4 < 0.03) continue;
 
         var seed4 = gy4 * 1000 + gx4;
         var rnd4 = srand(seed4);
 
-        // Higher fill in dark regions — starfield follows the image shape
-        // Even light areas get a sparse scattering (like faint stars in bright sky)
-        var fillChance = 0.05 + dk4 * 0.40 + edge4 * 0.6;
+        // Strong image following: symbols concentrate where image has content
+        // Very sparse in light/sky areas, dense in dark/detailed areas
+        var fillChance = dk4 * dk4 * 0.80 + edge4 * 0.8 + 0.01;
         if (rnd4 > fillChance) continue;
 
         var x4 = sx4 + symSp * 0.5;
@@ -734,14 +796,14 @@
         var starRoll = srand(seed4 + 77);
         var alpha;
         if (isMeaningful) {
-          // Meaningful: always medium-to-bright
-          alpha = 0.15 + dk4 * 0.25;
-        } else if (starRoll < 0.05) {
-          // 5% faint symbols randomly get a medium glow
-          alpha = 0.10 + dk4 * 0.12;
+          // Meaningful: bright, scaled by image darkness
+          alpha = 0.12 + dk4 * 0.40;
+        } else if (starRoll < 0.10) {
+          // 10% faint symbols randomly get a medium glow
+          alpha = 0.06 + dk4 * 0.22;
         } else {
-          // Majority: very faint, like distant stars
-          alpha = 0.015 + dk4 * 0.04;
+          // Majority: visibility tied strongly to image content
+          alpha = 0.01 + dk4 * dk4 * 0.14;
         }
 
         var cStr = srand(seed4 + 10) < 0.20 ? "130,175,230" : "195,200,215";
