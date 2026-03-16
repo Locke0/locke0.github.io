@@ -12,7 +12,7 @@ eleventyExcludeFromCollections: true
   {% if collections.posts | length > 0 %}
 	  <updated>{{ collections.posts | rssLastUpdatedDate }}</updated>
   {% else %}
-	  <updated>{{ "1970-01-01T00:00:00Z" }}</updated>
+	  <updated>{{ buildDate | rssDate }}</updated>
   {% endif %}
 	<id>{{ metadata.feed.id }}</id>
 	<author>
