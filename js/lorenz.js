@@ -21,173 +21,161 @@
   var baseSymbols = [
     "\u03B1","\u03B2","\u03B3","\u03B4","\u03B5","\u03B7","\u03B8",
     "\u03BB","\u03BC","\u03C0","\u03C3","\u03C6","\u03C8","\u03C9","\u03A9",
-    "\u2202","\u2207","\u2211","\u222B","\u221E","\u2200","\u2203",
+    "\u2202","\u2207","\u2211","\u222B","\u221E",
     "\u221A","\u2248","\u2297","\u2295","\u2192","\u21D2",
-    "\u211D","\u2102","\u210F","\u2113",
-    "dx","dt","dz","d\u03B8","d\u03C8","d\u03C4",
+    "\u211D","\u210F","\u2113",
+    "dx","dt","dz","d\u03B8","d\u03C4",
     "\u2202x","\u2202t","d/dt","\u2202/\u2202t",
     "x\u0307","x\u0308","\u03B8*","\u03BB\u2081","\u03BB\u2099",
     "0","1","e","i","\u03C0","\u03C6",
-    "ln","exp","\u221E","det","tr",
-    "\u2261","\u2248","\u221D","d\u00B2x/dt\u00B2",
-    "\u27E8x|y\u27E9","x\u2297y","|x\u27E9"
+    "ln","exp","det","tr",
+    "\u2261","\u2248","\u221D",
+    "\u27E8x|y\u27E9"
   ];
 
-  // HOME — world models, dynamical systems, chaos, emergence, consciousness
+  // HOME — hidden dynamics, world models, agents, optimization
   var homeSymbols = [
-    // World models / hidden structure
-    "p(x\u209C\u208A\u2081|x\u209C)","x\u0307=f(x,u)","dx/dt=f(x)",
+    // Hidden dynamics / world models / latent variables
     "p(z|x)","p(x|z)","x\u0302=g(z)",
-    "p(x)=\u222Bp(x|z)p(z)dz","\u27E8\u03C8|M|\u03C8\u27E9",
     "log p(x|\u03B8)","D_KL(q\u2016p)","ELBO(\u03B8)",
-    "F=E_q[log q/p]","p(obs|hidden)",
-    // Dynamical systems / chaos
+    "p(obs|hidden)","p(x\u209C\u208A\u2081|x\u209C)",
+    "z~q(z|x)","F=E_q[log q/p]",
+    "p(x)=\u222Bp(x|z)p(z)dz",
+    "x\u0307=f(x,u)","dx/dt=f(x)",
+    // RL / agents / trajectories
+    "Q\u03C0(s,a)","V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
+    "A(s,a)=Q-V","\u03B4=r+\u03B3V'-V",
+    "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
+    "\u03C4=(s,a,r,s')","max\u2090 E[R|\u03C0]",
+    "s\u2099\u208A\u2081~P(s'|s,a)","r(s,a,s')",
+    "J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
+    // Free energy / active inference / Markov blankets
+    "F=D_KL+H","\u2202\u03BC/\u2202t=f(\u03BC,b)",
+    "da/dt=\u03C0(a)","P(H|E)\u221DP(E|H)P(H)",
+    "\u0394G=\u0394H-T\u0394S",
+    // Optimization / gradient methods
+    "\u2207L","\u2202L/\u2202\u03B8","\u2202\u00B2L/\u2202\u03B8\u00B2",
+    "\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
+    "QK\u1D40/\u221Ad","dx/dt=f_\u03B8(x)",
+    "\u03C3(Wx+b)","softmax(z/\u03C4)",
+    "\u2016\u2207L\u2016\u00B2",
+    // Embeddings / representation / multi-modal fusion
+    "z=f_\u03B8(x)","h=enc(x\u1D65,x\u2097)",
+    "L_con(z\u1D62,z\u2C7C)","x\u1D65\u2295x\u2097",
+    "z\u1D65\u00B7z\u2097",
+    // Evolutionary strategies
+    "f(\u03B8+\u03B5\u03B4)","\u03B8\u2190\u03B8+\u03B1\u03A3\u03B4\u1D62f\u1D62",
+    // Dynamical systems / chaos (Lorenz)
     "x\u0307=\u03C3(y-x)","y\u0307=\u03C1x-y-xz","z\u0307=xy-\u03B2z",
-    "x\u2099\u208A\u2081=rx(1-x)","\u03BB>0","\u03BB\u2098\u2090\u2093>0",
-    "\u03B4=4.669...","z\u2099\u208A\u2081=z\u00B2+c",
-    "dim_H(A)","W\u02E2(x*)","W\u1D58(x*)",
-    // Consciousness / emergence
-    "\u03A6","IIT: \u03A6>0","I(past;future)",
-    "\u27E8self|world\u27E9","cogito \u2234 sum",
-    "S=k_B ln \u03A9","\u0394S\u22650",
-    // Quantum
-    "|\u03C8\u27E9=\u03B1|0\u27E9+\u03B2|1\u27E9","i\u210F\u2202\u209C\u03C8=H\u0302\u03C8",
-    "\u0394x\u0394p\u2265\u210F/2","\u03C1=|\u03C8\u27E9\u27E8\u03C8|",
-    // Relativity
-    "ds\u00B2=g\u03BC\u03BDdx\u03BCdx\u03BD","G\u03BC\u03BD=8\u03C0T\u03BC\u03BD","E=mc\u00B2",
-    // DNA / biology
-    "ATCG","A\u2261T","G\u2261C",
-    "dN/dt=rN(1-N/K)","\u2202c/\u2202t=D\u2207\u00B2c",
-    // Deep learning
-    "\u2207L","\u2202L/\u2202\u03B8","QK\u1D40/\u221Ad",
-    "dx/dt=f_\u03B8(x)","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
-    // Agency / meaning / existence / perception — famous equations
-    "P(H|E)\u221DP(E|H)P(H)",         // Bayes' theorem — perception
-    "\u03B4\u222BLdt=0",               // Principle of least action — agency
-    "da/dt=\u03C0(a)",                 // Active inference — agency
-    "\u2202\u03BC/\u2202t=f(\u03BC,b)",// Markov blanket — self/world boundary
-    "\u0394G=\u0394H-T\u0394S",        // Gibbs free energy — life/meaning
-    "F=D_KL+H",                        // Free energy principle — perception
-    "dS/dt\u22650",                    // Second law — arrow of time
-    "\u222B\u03C8*\u03C8 d\u00B3x=1",  // Born rule — observation
-    "R\u03BC\u03BD-\u00BDg\u03BC\u03BDR=8\u03C0T\u03BC\u03BD", // Einstein field — reality
-    "\u27E8\u03C8|A|\u03C8\u27E9",     // Expectation — measurement
-    "\u2202S/\u2202t+H=0"              // Hamilton-Jacobi — optimal action
+    "\u03BB\u2098\u2090\u2093>0","x\u2099\u208A\u2081=rx(1-x)",
+    // Cross-field inspirations (dim texture, not headline)
+    "\u27E8\u03C8|A|\u03C8\u27E9",            // expectation \u2248 measurement
+    "\u0394S\u22650",                           // entropy arrow \u2192 learning
+    "S=k_B ln \u03A9",                          // stat mech \u2192 free energy
+    "dN/dt=rN(1-N/K)",                          // population \u2192 evolutionary
+    "\u03A6","I(past;future)"                    // emergence, predictive info
   ];
 
-  // ABOUT — information theory, network topology, geometry, self-reference
+  // ABOUT — information theory, representation, learning
   var aboutSymbols = [
     // Information theory
     "H(X)=-\u03A3p ln p","I(X;Y)=H(X)-H(X|Y)",
     "D_KL(p\u2016q)=\u03A3p ln(p/q)","D_KL\u22650",
     "C=max I(X;Y)","I(\u03B8)=E[(\u2202log p/\u2202\u03B8)\u00B2]",
     "H(X,Y)=H(X)+H(Y|X)","S=-\u03A3p\u1D62 log p\u1D62",
-    "R(D)=min I(X;X\u0302)","H\u221E=-log max p",
-    // Network topology / graphs
-    "L=D-A","G=(V,E)","\u03BB\u2082(L)",
-    "P(k)~k\u207B\u1D45","\u03C7=V-E+F",
-    "C(v)=2e/(k(k-1))","d(u,v)","H\u2099(G)",
-    // Geometry / topology
-    "\u222B_M d\u03C9=\u222B_{\u2202M}\u03C9","K=\u03BA\u2081\u03BA\u2082",
-    "\u03C0\u2081(M)","fiber \u03C0:E\u2192B","\u03B2\u2096(M)",
-    "R\u1D62\u2C7C\u2096\u2097","geodesic \u03B3",
-    "\u2207\u00D7F","d\u03C9=0",
-    // Self-reference / existence
-    "G\u00F6del: \u22AC\u03C6","\u03A6(X)=min I",
-    "\u27E8self|world\u27E9","qualia Q(x)",
-    "observer \u2192 |obs\u27E9",
-    // Quantum
-    "|\u03C8\u27E9","\u27E8\u03C6|\u03C8\u27E9","\u210F",
-    "S=-tr(\u03C1 ln\u03C1)","[\u0302x,\u0302p]=i\u210F",
-    // Deep learning
-    "J(\u03B8)","H(\u03B8)","F(\u03B8)",
-    "tr(H)","eig(\u03BB)","\u2016\u2207L\u2016\u00B2",
-    "d_W(p,q)","T#p=q"
+    "R(D)=min I(X;X\u0302)",
+    // Representation / learning
+    "z=f_\u03B8(x)","h=enc(x)",
+    "L_con(z\u1D62,z\u2C7C)","sim(z\u1D62,z\u2C7C)",
+    "\u2207_\u03B8 L","J(\u03B8)","H(\u03B8)",
+    "d_W(p,q)","T#p=q",
+    "tr(H)","\u2016\u2207L\u2016\u00B2",
+    // Network / graph structure
+    "G=(V,E)","L=D-A","\u03BB\u2082(L)",
+    "P(k)~k\u207B\u1D45","C(v)=2e/(k(k-1))",
+    // Hidden structure
+    "p(z|x)","p(x|z)","ELBO(\u03B8)",
+    "p(obs|hidden)","D_KL(q\u2016p)",
+    // Cross-field
+    "S=-tr(\u03C1 ln\u03C1)","\u27E8\u03C6|\u03C8\u27E9",
+    "\u03A6","I(past;future)"
   ];
 
-  // POSTS — RL agents, control theory, optimization, dynamical systems
+  // POSTS — RL, control, optimization, dynamical systems
   var postsSymbols = [
-    // RL agents / decision-making
+    // RL / decision-making / trajectories
     "Q\u03C0(s,a)","V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
     "A(s,a)=Q-V","\u03B4=r+\u03B3V'-V",
     "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
     "max\u2090 E[R|\u03C0]","s\u2099\u208A\u2081~P(s'|s,a)",
-    "p(a\u209C|o\u2264\u209C)","r(s,a,s')",
+    "\u03C4=(s,a,r,s')","J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
     // Control theory
     "x\u0307=Ax+Bu","u=-Kx","V(x)>0","V\u0307(x)\u22640",
-    "A\u1D40P+PA-PBR\u207B\u00B9B\u1D40P+Q=0",
     "x\u0302\u0307=Ax\u0302+K(y-Cx\u0302)",
     "\u03BB\u1D62(A)<0","det(sI-A)=0",
-    // Optimization / DL math
+    // Optimization / DL
     "\u2207L","\u2202L/\u2202\u03B8","\u2202\u00B2L/\u2202\u03B8\u00B2",
-    "QK\u1D40/\u221Ad","W\u1D40x+b","f(\u03B8)",
+    "QK\u1D40/\u221Ad","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
+    "KL[q\u2016p]","ELBO(\u03B8)","log p(x|\u03B8)",
     "\u03C3(Wx+b)","softmax(z/\u03C4)",
-    "\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L","KL[q\u2016p]",
-    "ELBO(\u03B8)","log p(x|\u03B8)",
     // Dynamical systems
     "dx/dt=f(x)","x\u0307=f(x,\u03BC)",
-    "d\u03C6/dt=F(\u03C6)","\u03C6\u209C: M\u2192M",
-    "\u03BB\u2081=lim\u00B9/\u209C ln|df\u207F|","\u03BB\u2098\u2090\u2093>0",
-    // Lagrangian / Hamiltonian
-    "H(q,p)=T+V","L=T-V",
-    "\u2202L/\u2202q-d/dt(\u2202L/\u2202q\u0307)=0",
-    // Relativity
-    "d\u03C4\u00B2=dt\u00B2-dx\u00B2/c\u00B2","\u03B3=1/\u221A(1-v\u00B2/c\u00B2)"
+    "d\u03C6/dt=F(\u03C6)","\u03BB\u2098\u2090\u2093>0",
+    // Trajectories / evolutionary / representation
+    "f(\u03B8+\u03B5\u03B4)","\u03B8\u2190\u03B8+\u03B1\u03A3\u03B4\u1D62f\u1D62",
+    "z=f_\u03B8(x)","h=enc(x\u1D65,x\u2097)"
   ];
 
-  // Assemble page-specific list
+  // Assemble: page-specific symbols weighted 3:1 over base
   var pageSymbols = isAbout ? aboutSymbols : isPosts ? postsSymbols : homeSymbols;
-  var symbols = baseSymbols.concat(baseSymbols).concat(pageSymbols).concat(pageSymbols);
+  var symbols = baseSymbols.concat(pageSymbols).concat(pageSymbols).concat(pageSymbols);
 
-  // ML probability/token labels for segmentation overlay
+  // ML labels for segmentation overlay — domain-relevant
   var mlLabels = [
-    "p=0.94","p=0.87","p=0.72","p=0.61","p=0.98",
-    "cls:0","cls:1","cls:2","cls:3","cls:4",
-    "IoU:0.91","IoU:0.85","IoU:0.78",
-    "conf:0.93","conf:0.76","conf:0.88",
-    "logit:2.4","logit:-0.3","logit:1.7",
-    "tok:384","tok:512","tok:1024",
+    "loss:0.023","loss:1.47","loss:0.008",
+    "KL:0.34","KL:1.02","KL:0.18",
+    "ELBO:-231","ELBO:-89","ELBO:-412",
+    "reward:0.73","reward:-0.2","return:142",
+    "z_dim:128","z_dim:256","z_dim:512",
+    "lr:3e-4","lr:1e-3","lr:1e-5",
+    "step:10k","step:100k","epoch:50",
     "dim:768","dim:1024","dim:4096",
-    "layer:12","layer:24","layer:32",
-    "head:8","head:16","head:32"
+    "layer:12","layer:24","head:8","head:16"
   ];
 
   var lightDots = ["\u00B7","\u2219","\u22C5","\u2027"];
 
-  // Meaningful symbols that deserve to be bright — equations, concepts, insight
+  // Bright set: only core research equations flare — the ones that tell your story
   var brightSet = new Set([
-    "I(past;future)","p(x)=\u222Bp(x|z)p(z)dz","\u27E8self|world\u27E9",
-    "cogito \u2234 sum","IIT: \u03A6>0","\u03A6",
-    "|\u03C8\u27E9=\u03B1|0\u27E9+\u03B2|1\u27E9","i\u210F\u2202\u209C\u03C8=H\u0302\u03C8",
-    "\u0394x\u0394p\u2265\u210F/2","S=-tr(\u03C1 ln\u03C1)",
-    "E=mc\u00B2","G\u03BC\u03BD=8\u03C0T\u03BC\u03BD",
-    "ds\u00B2=g\u03BC\u03BDdx\u03BCdx\u03BD",
-    "x\u0307=\u03C3(y-x)","z\u2099\u208A\u2081=z\u00B2+c",
-    "\u03BB\u2098\u2090\u2093>0","\u03B4=4.669...","\u03BB>0",
-    "H(X)=-\u03A3p ln p","I(X;Y)=H(X)-H(X|Y)",
-    "D_KL(p\u2016q)=\u03A3p ln(p/q)","S=k_B ln \u03A9","\u0394S\u22650",
-    "p(obs|hidden)","p(hidden|obs)","F=E_q[log q/p]",
+    // Hidden dynamics / world models — the central thread
+    "p(obs|hidden)","p(z|x)","p(x|z)",
     "ELBO(\u03B8)","log p(x|\u03B8)","D_KL(q\u2016p)",
-    "\u2207L","\u2202L/\u2202\u03B8","QK\u1D40/\u221Ad",
-    "dx/dt=f_\u03B8(x)","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
+    "F=E_q[log q/p]","p(x)=\u222Bp(x|z)p(z)dz",
+    "z~q(z|x)","p(x\u209C\u208A\u2081|x\u209C)",
+    "x\u0302=g(z)",
+    // RL / agents
     "V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
     "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
-    "V(x)>0","V\u0307(x)\u22640",
-    "ATCG","dN/dt=rN(1-N/K)",
-    "\u222B_M d\u03C9=\u222B_{\u2202M}\u03C9","\u03C7(M)=V-E+F",
-    "P(k)~k\u207B\u1D45","G=(V,E)",
-    "G\u00F6del: \u22AC\u03C6","qualia Q(x)",
-    "[\u0302x,\u0302p]=i\u210F","P(a)=|\u27E8a|\u03C8\u27E9|\u00B2",
-    "H(q,p)=T+V","L=T-V",
-    "\u2202L/\u2202q-d/dt(\u2202L/\u2202q\u0307)=0",
-    "x\u0307=Ax+Bu","A\u1D40P+PA-PBR\u207B\u00B9B\u1D40P+Q=0",
-    "dx/dt=f(x)","x\u2099\u208A\u2081=rx(1-x)",
-    "p(x\u209C\u208A\u2081|x\u209C)","x\u0302=g(z)",
-    "observer \u2192 |obs\u27E9",
-    "P(H|E)\u221DP(E|H)P(H)","\u03B4\u222BLdt=0","da/dt=\u03C0(a)",
-    "\u2202\u03BC/\u2202t=f(\u03BC,b)","\u0394G=\u0394H-T\u0394S",
-    "F=D_KL+H","dS/dt\u22650","\u222B\u03C8*\u03C8 d\u00B3x=1",
-    "\u27E8\u03C8|A|\u03C8\u27E9","\u2202S/\u2202t+H=0"
+    "J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
+    // Free energy / Markov blankets
+    "F=D_KL+H","\u2202\u03BC/\u2202t=f(\u03BC,b)",
+    "P(H|E)\u221DP(E|H)P(H)",
+    // Optimization
+    "\u2207L","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
+    "QK\u1D40/\u221Ad","dx/dt=f_\u03B8(x)",
+    // Representation / multi-modal
+    "z=f_\u03B8(x)","L_con(z\u1D62,z\u2C7C)",
+    "h=enc(x\u1D65,x\u2097)",
+    // Dynamical systems
+    "x\u0307=\u03C3(y-x)","\u03BB\u2098\u2090\u2093>0",
+    "dx/dt=f(x)","x\u0307=f(x,u)",
+    // Evolutionary
+    "f(\u03B8+\u03B5\u03B4)",
+    // Info theory (about page)
+    "H(X)=-\u03A3p ln p","I(X;Y)=H(X)-H(X|Y)",
+    "D_KL(p\u2016q)=\u03A3p ln(p/q)",
+    // Control (posts page)
+    "V(x)>0","V\u0307(x)\u22640","x\u0307=Ax+Bu"
   ]);
 
   function srand(s) { var x = Math.sin(s) * 10000; return x - Math.floor(x); }
@@ -517,7 +505,7 @@
 
   function initAnimObjects(w, h) {
     matrixDrops = [];
-    var dropCount = Math.max(8, Math.floor(w / 80));
+    var dropCount = Math.max(6, Math.floor(w / 110));
     for (var i = 0; i < dropCount; i++) {
       var d = createMatrixDrop(w, h);
       d.y = -Math.random() * h * 2;
@@ -525,7 +513,7 @@
     }
 
     drifters = [];
-    var driftCount = Math.max(8, Math.floor(w / 60));
+    var driftCount = Math.max(6, Math.floor(w / 90));
     for (var i2 = 0; i2 < driftCount; i2++) {
       drifters.push(createDrifter(w, h));
     }
@@ -542,7 +530,7 @@
 
     // Rain drops: sparse straight-down rain
     rainDrops = [];
-    var rainCount = Math.max(5, Math.floor(w / 100));
+    var rainCount = Math.max(3, Math.floor(w / 140));
     for (var ir = 0; ir < rainCount; ir++) {
       var rd = createRainDrop(w, h);
       rd.y = Math.random() * h; // stagger
@@ -551,7 +539,7 @@
 
     // Twinkling stars: sparse bright dots scattered across the image
     stars = [];
-    var starCount = Math.max(10, Math.floor(w * h / 15000));
+    var starCount = Math.max(8, Math.floor(w * h / 20000));
     for (var i3 = 0; i3 < starCount; i3++) {
       stars.push({
         x: Math.random() * w, y: Math.random() * h,
@@ -771,7 +759,7 @@
     // === 5. Math symbols — starry night density, image-following ===
     // Tighter grid, most symbols faint like distant stars, some medium, few bright.
     bCtx.textAlign = "center"; bCtx.textBaseline = "middle";
-    var symSp = sp * 2.5; // tighter grid (~20px) for starfield density
+    var symSp = sp * 3.5; // sparser grid (~28px) for night-sky feel
     for (var sy4 = 0; sy4 < h; sy4 += symSp) {
       for (var sx4 = 0; sx4 < w; sx4 += symSp) {
         var gx4 = Math.floor((sx4 + symSp * 0.5) / sp);
@@ -789,7 +777,7 @@
 
         // Strong image following: symbols concentrate where image has content
         // Very sparse in light/sky areas, dense in dark/detailed areas
-        var fillChance = dk4 * dk4 * 0.80 + edge4 * 0.8 + 0.01;
+        var fillChance = dk4 * dk4 * 0.50 + edge4 * 0.5 + 0.005;
         if (rnd4 > fillChance) continue;
 
         var x4 = sx4 + symSp * 0.5;
@@ -810,14 +798,14 @@
         var starRoll = srand(seed4 + 77);
         var alpha;
         if (isMeaningful) {
-          // Meaningful: bright, scaled by image darkness
-          alpha = 0.12 + dk4 * 0.40;
-        } else if (starRoll < 0.10) {
-          // 10% faint symbols randomly get a medium glow
-          alpha = 0.06 + dk4 * 0.22;
+          // Research equations: bright, stand out like key stars
+          alpha = 0.15 + dk4 * 0.50;
+        } else if (starRoll < 0.08) {
+          // ~8% get a medium glow — secondary stars
+          alpha = 0.04 + dk4 * 0.18;
         } else {
-          // Majority: visibility tied strongly to image content
-          alpha = 0.01 + dk4 * dk4 * 0.14;
+          // Majority: faint distant texture
+          alpha = 0.008 + dk4 * dk4 * 0.10;
         }
 
         var cStr = srand(seed4 + 10) < 0.20 ? "130,175,230" : "195,200,215";
@@ -1099,7 +1087,7 @@
     }
 
     // Spawn new rain occasionally
-    if (frameCount % 8 === 0 && rainDrops.length < Math.floor(w / 60)) {
+    if (frameCount % 14 === 0 && rainDrops.length < Math.floor(w / 90)) {
       rainDrops.push(createRainDrop(w, h));
     }
 
