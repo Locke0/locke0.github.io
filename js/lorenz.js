@@ -209,10 +209,25 @@
   header.appendChild(realCanvas);
   header.appendChild(revealCanvas);
 
+  // Hide background image immediately so it never flashes before the animation.
+  // Store backgroundPosition first — coverDim needs it later.
+  var storedBgPos = header.style.backgroundPosition;
+  header.style.backgroundImage = "none";
+
   var ascCtx = asciiCanvas.getContext("2d");
   var rlCtx = realCanvas.getContext("2d");
   var rvCtx = revealCanvas.getContext("2d");
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Fill canvas with background color so user sees dark theme immediately.
+  (function prefillCanvas() {
+    var w = header.clientWidth, h = header.clientHeight;
+    asciiCanvas.width = w * dpr; asciiCanvas.height = h * dpr;
+    ascCtx.setTransform(dpr,0,0,dpr,0,0);
+    var bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c";
+    ascCtx.fillStyle = bg;
+    ascCtx.fillRect(0, 0, w, h);
+  })();
 
   // --- Interaction state ---
   var mouseX = -1, mouseY = -1, cursorX = -1, cursorY = -1;
@@ -561,12 +576,11 @@
     renderBaseToOffscreen(w, h, texts);
     renderTextOnCanvas(rlCtx, texts);
     for (var i = 0; i < texts.length; i++) texts[i].el.style.visibility = "hidden";
-    header.style.backgroundImage = "none";
     initAnimObjects(w, h);
   }
 
   function renderReal(w, h) {
-    var dim = coverDim(img.width, img.height, w, h, header.style.backgroundPosition);
+    var dim = coverDim(img.width, img.height, w, h, storedBgPos);
     rlCtx.drawImage(img, dim.sx, dim.sy, dim.sw, dim.sh, 0, 0, w, h);
     var c = getColors(), fH = 50;
     var g = rlCtx.createLinearGradient(0, h - fH, 0, h);
@@ -582,7 +596,7 @@
 
     var off = document.createElement("canvas"); off.width = cols; off.height = rows;
     var oCtx = off.getContext("2d");
-    var dim = coverDim(img.width, img.height, cols, rows, header.style.backgroundPosition);
+    var dim = coverDim(img.width, img.height, cols, rows, storedBgPos);
     oCtx.drawImage(img, dim.sx, dim.sy, dim.sw, dim.sh, 0, 0, cols, rows);
     var px = oCtx.getImageData(0, 0, cols, rows).data;
 

@@ -62,6 +62,9 @@
     <!-- Notably iOS UAs also contain Mac OS X -->
     <script csp-hash>if (/Mac OS X/.test(navigator.userAgent))document.documentElement.classList.add('apple')
     </script>
+    <!-- Hide header bg-image before paint so lorenz.js animation loads without image flash -->
+    <script csp-hash>document.documentElement.classList.add('js')</script>
+    <style>.js header[style*="background-image"]{background-image:none!important}</style>
     <!-- css is inserted by optimize-html custom plugin -->
   </head>
   <body>
