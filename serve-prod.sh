@@ -7,20 +7,8 @@ echo "🔨 Building production site (with pathPrefix=/blog)..."
 npm run build:prod
 
 echo ""
-echo "📋 Checking generated paths:"
+echo "📋 Checking generated output..."
 echo "----------------------------------------"
-echo "Header images:"
-grep -o "background-image: url('[^']*')" docs/index.html docs/posts/index.html docs/about/index.html 2>/dev/null | head -3
-echo ""
-
-echo "📁 Verifying images exist:"
-for img in solarpunk_mountains.jpg 4025_philosopher_pondering.jpg solarpunk.jpg; do
-  if [ -f "docs/img/remote/$img" ]; then
-    echo "  ✅ docs/img/remote/$img"
-  else
-    echo "  ❌ docs/img/remote/$img (MISSING)"
-  fi
-done
 echo ""
 
 echo "🌐 Setting up server to simulate GitHub Pages..."

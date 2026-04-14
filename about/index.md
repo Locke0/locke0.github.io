@@ -1,11 +1,9 @@
 ---
 title:
 layout: layouts/post.njk
-image: /img/remote/solarpunk.jpg
 eleventyNavigation:
   key: About
   order: 2
-headerImagePosition: center 0%
 ---
 <div class="about-statement">
 

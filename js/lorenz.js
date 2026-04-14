@@ -1,14 +1,11 @@
 // Header → Multi-agent observatory. Agents sense, think, act — and societies emerge.
 // Each agent: phase-shifting glyph + orbiting dots. Trails of research equations.
-// Solarpunk image revealed on hover — peeling back hidden reality.
+// Palette glow revealed on hover — peeling back hidden light.
 (function () {
   "use strict";
 
-  var header = document.querySelector("header[style*='background-image']");
+  var header = document.querySelector("header");
   if (!header) return;
-  var match = header.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/);
-  if (!match) return;
-  var imgUrl = match[1];
 
   // ===== Vocabulary by Markov blanket role =====
   // Blackboard vocabulary — what gets written in the void
@@ -54,7 +51,7 @@
 
   function srand(s) { var x = Math.sin(s) * 10000; return x - Math.floor(x); }
 
-  // --- Canvases (3 layers: main, real image, reveal overlay) ---
+  // --- Canvases (2 layers: main + reveal overlay) ---
   var asciiCanvas = document.createElement("canvas");
   var revealCanvas = document.createElement("canvas");
   [asciiCanvas, revealCanvas].forEach(function (c) { c.setAttribute("aria-hidden", "true"); });
@@ -66,7 +63,6 @@
   header.appendChild(asciiCanvas);
   header.appendChild(revealCanvas);
 
-  var storedBgPos = header.style.backgroundPosition;
   header.style.backgroundImage = "none";
 
   var ascCtx = asciiCanvas.getContext("2d");
@@ -239,18 +235,10 @@
   function getColors() {
     return { bg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c" };
   }
-  function coverDim(iW, iH, cW, cH, bgPos) {
-    var ia = iW / iH, ca = cW / cH, sw, sh, sx, sy;
-    if (ia > ca) { sh = iH; sw = iH * ca; sx = (iW - sw) / 2; sy = 0; }
-    else { sw = iW; sh = iW / ca; sx = 0; sy = (iH - sh) * 0.6; }
-    if (bgPos) { var p2 = bgPos.match(/(\d+)%/g); if (p2 && p2.length >= 2) sy = (iH - sh) * (parseInt(p2[1]) / 100); }
-    return { sx: sx, sy: Math.max(0, sy), sw: sw, sh: sh };
-  }
-
-  var img = new Image();
-  img.crossOrigin = "anonymous";
-  img.onload = function () { renderAll(); window.addEventListener("resize", debounce(renderAll, 200)); startAnim(); };
-  img.src = imgUrl;
+  // No image dependency — init immediately
+  renderAll();
+  window.addEventListener("resize", debounce(renderAll, 200));
+  startAnim();
 
   function getHeaderTexts() {
     var texts = [], els = header.querySelectorAll("h2, aside");
@@ -1481,23 +1469,7 @@
     var sp = 8; gridSp = sp;
     var cols = Math.ceil(w / sp), rows = Math.ceil(h / sp);
     gridCols = cols; gridRows = rows;
-    var off = document.createElement("canvas"); off.width = cols; off.height = rows;
-    var oCtx = off.getContext("2d");
-    var dim = coverDim(img.width, img.height, cols, rows, storedBgPos);
-    oCtx.drawImage(img, dim.sx, dim.sy, dim.sw, dim.sh, 0, 0, cols, rows);
-    var px = oCtx.getImageData(0, 0, cols, rows).data;
-    lumGrid = new Float32Array(cols * rows);
-    for (var i = 0; i < cols * rows; i++) {
-      var i4 = i * 4;
-      lumGrid[i] = (0.299 * px[i4] + 0.587 * px[i4 + 1] + 0.114 * px[i4 + 2]) / 255;
-    }
-    edgeGrid = new Float32Array(cols * rows);
-    for (var row = 1; row < rows - 1; row++) {
-      for (var col = 1; col < cols - 1; col++) {
-        var idx = row * cols + col;
-        edgeGrid[idx] = Math.sqrt(Math.pow(lumGrid[idx] - lumGrid[idx + 1], 2) + Math.pow(lumGrid[idx] - lumGrid[idx + cols], 2));
-      }
-    }
+    // No image — lumGrid stays null, getLumAt returns uniform 0.5
   }
 
   function renderBaseToOffscreen(w, h, texts) {

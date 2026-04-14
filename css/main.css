@@ -430,10 +430,6 @@ header {
   min-height: 30vh;
 }
 
-header[style*="background-image"]:not([style*="background-position"]) {
-  background-position: center 70%;
-}
-
 
 
 header > * {
