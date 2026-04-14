@@ -1,5 +1,5 @@
 ---
-title: █1%▒▒▒▒▒▒▒▒▒▒▒▒
+title:
 layout: layouts/post.njk
 image: /img/remote/solarpunk.jpg
 eleventyNavigation:

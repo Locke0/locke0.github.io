@@ -1,257 +1,132 @@
-// Header → LiDAR/matrix/nature-code aesthetic.
-// Static: point cloud, scan lines, segmentation masks, sparse math symbols, ML tokens.
-// Animated: slow matrix drip, cosmic drifters, rare unpredictable comets.
+// Header → Multi-agent observatory. Agents sense, think, act — and societies emerge.
+// Each agent: phase-shifting glyph + orbiting dots. Trails of research equations.
+// Solarpunk image revealed on hover — peeling back hidden reality.
 (function () {
   "use strict";
 
   var header = document.querySelector("header[style*='background-image']");
   if (!header) return;
-
   var match = header.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/);
   if (!match) return;
   var imgUrl = match[1];
 
-  // Detect page for themed symbols
+  // ===== Vocabulary by Markov blanket role =====
+  // Blackboard vocabulary — what gets written in the void
+  var senseV = ["?","...","look","here","edge","what?","hm","see","feel","notice"];
+  var thinkV = ["why","if","but","maybe","because","\u2234","\u2235","suppose","doubt","therefore"];
+  var actV = ["yes","now","go","try","begin","do","make","change","forward","here"];
+  var socialV = ["us","we","you","hello","together","listen","trust","here","with","stay"];
+
+  // Agent glyphs — what the agent itself looks like per state (slow morphing)
+  var senseGlyphs = ["\u25CB","\u25E6","?","\u2299"];       // ○ ◦ ? ⊙
+  var thinkGlyphs = ["\u2234","\u223F","\u2206","\u25C7"];   // ∴ ∿ ∆ ◇
+  var actGlyphs = ["\u2192","\u25B8","\u25CF","\u21D2"];     // → ▸ ● ⇒
+
+  // ===== Palette =====
+  // Solarpunk palette
+  var P = {
+    blue: "120,170,220", green: "90,185,130", amber: "210,175,75",
+    warm: "225,210,180", cool: "160,170,185", rose: "180,120,140"
+  };
+
+  // Page-specific agent config — different initial conditions per page
   var pagePath = window.location.pathname;
   var isHome = pagePath === "/" || pagePath === "/index.html";
   var isAbout = pagePath.indexOf("/about") === 0;
   var isPosts = pagePath.indexOf("/posts") === 0;
 
-  // ===== Shared base symbols (Greek, operators, short math) =====
-  var baseSymbols = [
-    "\u03B1","\u03B2","\u03B3","\u03B4","\u03B5","\u03B7","\u03B8",
-    "\u03BB","\u03BC","\u03C0","\u03C3","\u03C6","\u03C8","\u03C9","\u03A9",
-    "\u2202","\u2207","\u2211","\u222B","\u221E",
-    "\u221A","\u2248","\u2297","\u2295","\u2192","\u21D2",
-    "\u211D","\u210F","\u2113",
-    "dx","dt","dz","d\u03B8","d\u03C4",
-    "\u2202x","\u2202t","d/dt","\u2202/\u2202t",
-    "x\u0307","x\u0308","\u03B8*","\u03BB\u2081","\u03BB\u2099",
-    "0","1","e","i","\u03C0","\u03C6",
-    "ln","exp","det","tr",
-    "\u2261","\u2248","\u221D",
-    "\u27E8x|y\u27E9"
-  ];
-
-  // HOME — hidden dynamics, world models, agents, optimization
-  var homeSymbols = [
-    // Hidden dynamics / world models / latent variables
-    "p(z|x)","p(x|z)","x\u0302=g(z)",
-    "log p(x|\u03B8)","D_KL(q\u2016p)","ELBO(\u03B8)",
-    "p(obs|hidden)","p(x\u209C\u208A\u2081|x\u209C)",
-    "z~q(z|x)","F=E_q[log q/p]",
-    "p(x)=\u222Bp(x|z)p(z)dz",
-    "x\u0307=f(x,u)","dx/dt=f(x)",
-    // RL / agents / trajectories
-    "Q\u03C0(s,a)","V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
-    "A(s,a)=Q-V","\u03B4=r+\u03B3V'-V",
-    "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
-    "\u03C4=(s,a,r,s')","max\u2090 E[R|\u03C0]",
-    "s\u2099\u208A\u2081~P(s'|s,a)","r(s,a,s')",
-    "J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
-    // Free energy / active inference / Markov blankets
-    "F=D_KL+H","\u2202\u03BC/\u2202t=f(\u03BC,b)",
-    "da/dt=\u03C0(a)","P(H|E)\u221DP(E|H)P(H)",
-    "\u0394G=\u0394H-T\u0394S",
-    // Optimization / gradient methods
-    "\u2207L","\u2202L/\u2202\u03B8","\u2202\u00B2L/\u2202\u03B8\u00B2",
-    "\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
-    "QK\u1D40/\u221Ad","dx/dt=f_\u03B8(x)",
-    "\u03C3(Wx+b)","softmax(z/\u03C4)",
-    "\u2016\u2207L\u2016\u00B2",
-    // Embeddings / representation / multi-modal fusion
-    "z=f_\u03B8(x)","h=enc(x\u1D65,x\u2097)",
-    "L_con(z\u1D62,z\u2C7C)","x\u1D65\u2295x\u2097",
-    "z\u1D65\u00B7z\u2097",
-    // Evolutionary strategies
-    "f(\u03B8+\u03B5\u03B4)","\u03B8\u2190\u03B8+\u03B1\u03A3\u03B4\u1D62f\u1D62",
-    // Dynamical systems / chaos (Lorenz)
-    "x\u0307=\u03C3(y-x)","y\u0307=\u03C1x-y-xz","z\u0307=xy-\u03B2z",
-    "\u03BB\u2098\u2090\u2093>0","x\u2099\u208A\u2081=rx(1-x)",
-    // Cross-field inspirations (dim texture, not headline)
-    "\u27E8\u03C8|A|\u03C8\u27E9",            // expectation \u2248 measurement
-    "\u0394S\u22650",                           // entropy arrow \u2192 learning
-    "S=k_B ln \u03A9",                          // stat mech \u2192 free energy
-    "dN/dt=rN(1-N/K)",                          // population \u2192 evolutionary
-    "\u03A6","I(past;future)"                    // emergence, predictive info
-  ];
-
-  // ABOUT — information theory, representation, learning
-  var aboutSymbols = [
-    // Information theory
-    "H(X)=-\u03A3p ln p","I(X;Y)=H(X)-H(X|Y)",
-    "D_KL(p\u2016q)=\u03A3p ln(p/q)","D_KL\u22650",
-    "C=max I(X;Y)","I(\u03B8)=E[(\u2202log p/\u2202\u03B8)\u00B2]",
-    "H(X,Y)=H(X)+H(Y|X)","S=-\u03A3p\u1D62 log p\u1D62",
-    "R(D)=min I(X;X\u0302)",
-    // Representation / learning
-    "z=f_\u03B8(x)","h=enc(x)",
-    "L_con(z\u1D62,z\u2C7C)","sim(z\u1D62,z\u2C7C)",
-    "\u2207_\u03B8 L","J(\u03B8)","H(\u03B8)",
-    "d_W(p,q)","T#p=q",
-    "tr(H)","\u2016\u2207L\u2016\u00B2",
-    // Network / graph structure
-    "G=(V,E)","L=D-A","\u03BB\u2082(L)",
-    "P(k)~k\u207B\u1D45","C(v)=2e/(k(k-1))",
-    // Hidden structure
-    "p(z|x)","p(x|z)","ELBO(\u03B8)",
-    "p(obs|hidden)","D_KL(q\u2016p)",
-    // Cross-field
-    "S=-tr(\u03C1 ln\u03C1)","\u27E8\u03C6|\u03C8\u27E9",
-    "\u03A6","I(past;future)"
-  ];
-
-  // POSTS — RL, control, optimization, dynamical systems
-  var postsSymbols = [
-    // RL / decision-making / trajectories
-    "Q\u03C0(s,a)","V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
-    "A(s,a)=Q-V","\u03B4=r+\u03B3V'-V",
-    "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
-    "max\u2090 E[R|\u03C0]","s\u2099\u208A\u2081~P(s'|s,a)",
-    "\u03C4=(s,a,r,s')","J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
-    // Control theory
-    "x\u0307=Ax+Bu","u=-Kx","V(x)>0","V\u0307(x)\u22640",
-    "x\u0302\u0307=Ax\u0302+K(y-Cx\u0302)",
-    "\u03BB\u1D62(A)<0","det(sI-A)=0",
-    // Optimization / DL
-    "\u2207L","\u2202L/\u2202\u03B8","\u2202\u00B2L/\u2202\u03B8\u00B2",
-    "QK\u1D40/\u221Ad","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
-    "KL[q\u2016p]","ELBO(\u03B8)","log p(x|\u03B8)",
-    "\u03C3(Wx+b)","softmax(z/\u03C4)",
-    // Dynamical systems
-    "dx/dt=f(x)","x\u0307=f(x,\u03BC)",
-    "d\u03C6/dt=F(\u03C6)","\u03BB\u2098\u2090\u2093>0",
-    // Trajectories / evolutionary / representation
-    "f(\u03B8+\u03B5\u03B4)","\u03B8\u2190\u03B8+\u03B1\u03A3\u03B4\u1D62f\u1D62",
-    "z=f_\u03B8(x)","h=enc(x\u1D65,x\u2097)"
-  ];
-
-  // Assemble: page-specific symbols weighted 3:1 over base
-  var pageSymbols = isAbout ? aboutSymbols : isPosts ? postsSymbols : homeSymbols;
-  var symbols = baseSymbols.concat(pageSymbols).concat(pageSymbols).concat(pageSymbols);
-
-  // ML labels for segmentation overlay — domain-relevant
-  var mlLabels = [
-    "loss:0.023","loss:1.47","loss:0.008",
-    "KL:0.34","KL:1.02","KL:0.18",
-    "ELBO:-231","ELBO:-89","ELBO:-412",
-    "reward:0.73","reward:-0.2","return:142",
-    "z_dim:128","z_dim:256","z_dim:512",
-    "lr:3e-4","lr:1e-3","lr:1e-5",
-    "step:10k","step:100k","epoch:50",
-    "dim:768","dim:1024","dim:4096",
-    "layer:12","layer:24","head:8","head:16"
-  ];
-
-  var lightDots = ["\u00B7","\u2219","\u22C5","\u2027"];
-
-  // Bright set: only core research equations flare — the ones that tell your story
-  var brightSet = new Set([
-    // Hidden dynamics / world models — the central thread
-    "p(obs|hidden)","p(z|x)","p(x|z)",
-    "ELBO(\u03B8)","log p(x|\u03B8)","D_KL(q\u2016p)",
-    "F=E_q[log q/p]","p(x)=\u222Bp(x|z)p(z)dz",
-    "z~q(z|x)","p(x\u209C\u208A\u2081|x\u209C)",
-    "x\u0302=g(z)",
-    // RL / agents
-    "V\u03C0=E[\u03A3\u03B3\u1D57r]","\u03C0*(a|s)",
-    "\u2207_\u03B8 J=E[\u2207log\u03C0\u00B7Q]",
-    "J(\u03C4)=\u03A3\u03B3\u1D57r\u209C",
-    // Free energy / Markov blankets
-    "F=D_KL+H","\u2202\u03BC/\u2202t=f(\u03BC,b)",
-    "P(H|E)\u221DP(E|H)P(H)",
-    // Optimization
-    "\u2207L","\u03B8\u2099\u208A\u2081=\u03B8-\u03B7\u2207L",
-    "QK\u1D40/\u221Ad","dx/dt=f_\u03B8(x)",
-    // Representation / multi-modal
-    "z=f_\u03B8(x)","L_con(z\u1D62,z\u2C7C)",
-    "h=enc(x\u1D65,x\u2097)",
-    // Dynamical systems
-    "x\u0307=\u03C3(y-x)","\u03BB\u2098\u2090\u2093>0",
-    "dx/dt=f(x)","x\u0307=f(x,u)",
-    // Evolutionary
-    "f(\u03B8+\u03B5\u03B4)",
-    // Info theory (about page)
-    "H(X)=-\u03A3p ln p","I(X;Y)=H(X)-H(X|Y)",
-    "D_KL(p\u2016q)=\u03A3p ln(p/q)",
-    // Control (posts page)
-    "V(x)>0","V\u0307(x)\u22640","x\u0307=Ax+Bu"
-  ]);
+  // Home: balanced — all modalities, moderate speed, cooperation-focused
+  // About: introspective — more THINK, slower, reflective, fewer agents
+  // Posts: exploratory — more ACT, faster, curiosity-driven, more agents
+  var pageConfig = isAbout ? {
+    agentCount: 5, speedMul: 0.8, defaultState: S_THINK,
+    senseWeight: 0.2, thinkWeight: 0.6, actWeight: 0.2,
+    starDensity: 8000, reflectChance: 0.02
+  } : isPosts ? {
+    agentCount: 7, speedMul: 1.4, defaultState: S_ACT,
+    senseWeight: 0.2, thinkWeight: 0.2, actWeight: 0.6,
+    starDensity: 5000, reflectChance: 0.005
+  } : {
+    agentCount: 6, speedMul: 1.0, defaultState: S_ACT,
+    senseWeight: 0.33, thinkWeight: 0.34, actWeight: 0.33,
+    starDensity: 6000, reflectChance: 0.01
+  };
 
   function srand(s) { var x = Math.sin(s) * 10000; return x - Math.floor(x); }
 
-  // --- Canvases ---
+  // --- Canvases (3 layers: main, real image, reveal overlay) ---
   var asciiCanvas = document.createElement("canvas");
-  var realCanvas = document.createElement("canvas");
   var revealCanvas = document.createElement("canvas");
-  [asciiCanvas, realCanvas, revealCanvas].forEach(function (c) {
-    c.setAttribute("aria-hidden", "true");
-  });
+  [asciiCanvas, revealCanvas].forEach(function (c) { c.setAttribute("aria-hidden", "true"); });
   var cssBase = "position:absolute;top:0;left:0;width:100%;height:100%;";
   asciiCanvas.style.cssText = cssBase + "z-index:1;";
-  realCanvas.style.cssText = cssBase + "z-index:0;opacity:0;";
   revealCanvas.style.cssText = cssBase + "z-index:2;pointer-events:none;";
   header.style.position = "relative";
   header.style.overflow = "hidden";
   header.appendChild(asciiCanvas);
-  header.appendChild(realCanvas);
   header.appendChild(revealCanvas);
 
-  // Hide background image immediately so it never flashes before the animation.
-  // Store backgroundPosition first — coverDim needs it later.
   var storedBgPos = header.style.backgroundPosition;
   header.style.backgroundImage = "none";
 
   var ascCtx = asciiCanvas.getContext("2d");
-  var rlCtx = realCanvas.getContext("2d");
   var rvCtx = revealCanvas.getContext("2d");
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  // Fill canvas with background color so user sees dark theme immediately.
   (function prefillCanvas() {
     var w = header.clientWidth, h = header.clientHeight;
     asciiCanvas.width = w * dpr; asciiCanvas.height = h * dpr;
-    ascCtx.setTransform(dpr,0,0,dpr,0,0);
-    var bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c";
-    ascCtx.fillStyle = bg;
+    ascCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ascCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c";
     ascCtx.fillRect(0, 0, w, h);
   })();
 
-  // --- Interaction state ---
+  // --- State ---
   var mouseX = -1, mouseY = -1, cursorX = -1, cursorY = -1;
-  var isHovering = false, revealR = 180, trail = [], revealAlpha = 0, animating = false;
+  var isHovering = false, revealR = 130, revealAlpha = 0, animating = false;
   var wanderX = 0, wanderY = 0, wanderTargetX = 0, wanderTargetY = 0;
-  var wanderInited = false, wanderSpeed = 0.008, wanderInterval = 0;
+  var wanderInited = false, wanderSpeed = 0.008;
   var isTouching = false, touchFadeTimer = 0;
 
-  // Grid data
   var lumGrid = null, edgeGrid = null, gridCols = 0, gridRows = 0, gridSp = 0;
-  var cells = null; // breathing cells
+  var scentGrid = null;
   var baseCanvas = null;
 
-  // Animation objects
-  var matrixDrops = [];  // slow vertical matrix drip
-  var drifters = [];     // cosmic drifting particles
-  var comets = [];       // rare bright comets
-  var sparks = [];       // comet sparks
-  var stars = [];        // twinkling star dots
-  var rainDrops = [];    // straight-down single-char rain
-  var supernovae = [];   // expanding ring explosions
-  var brightStars = [];  // dynamic bright pulsing symbols
+  // --- Agent system ---
+  var agents = [];
+  var trails = [];
+  var marks = []; // persistent structural marks: dots, lines agents draw on the canvas
+  var MARK_CAP = 200;
+  var AGENT_N = 5;
+  var TRAIL_CAP = 250;
+  var TRAIL_AGE = 900; // ~15 sec
+  var INTERACT_R = 80;
+  var PULSE_R = 40;
+  var S_SENSE = 0, S_THINK = 1, S_ACT = 2;
 
+  // Hebbian bond matrix: bonds[i][j] = strength (0-1). Higher → easier coordination.
+  var bonds = [];
+  // Persistent nodes: landmarks built by sustained cooperation
+  var nodes = [];
+  var NODE_CAP = 16;
+  var AGENT_CAP = 10;
+  var STORAGE_KEY = "lorenz_scent";
+  var BONDS_KEY = "lorenz_bonds";
+  var NODES_KEY = "lorenz_nodes";
+
+  // --- Wander & events ---
   function pickWanderTarget() {
-    var w = header.clientWidth, h = header.clientHeight, pad = 0.15;
-    wanderTargetX = w * pad + Math.random() * w * (1 - 2 * pad);
-    wanderTargetY = h * pad + Math.random() * h * (1 - 2 * pad);
+    var w = header.clientWidth, h = header.clientHeight, p = 0.15;
+    wanderTargetX = w * p + Math.random() * w * (1 - 2 * p);
+    wanderTargetY = h * p + Math.random() * h * (1 - 2 * p);
   }
   function initWander() {
-    if (wanderInited) return;
-    wanderInited = true;
+    if (wanderInited) return; wanderInited = true;
     var w = header.clientWidth, h = header.clientHeight;
     wanderX = w * 0.3 + Math.random() * w * 0.4;
     wanderY = h * 0.3 + Math.random() * h * 0.4;
     pickWanderTarget();
-    wanderInterval = setInterval(pickWanderTarget, 4000 + Math.random() * 3000);
+    setInterval(pickWanderTarget, 4000 + Math.random() * 3000);
   }
 
   header.addEventListener("mouseenter", function () { isHovering = true; startAnim(); });
@@ -271,19 +146,16 @@
   }, { passive: true });
   header.addEventListener("touchend", function () { isTouching = false; touchFadeTimer = 120; });
   header.addEventListener("touchcancel", function () { isTouching = false; touchFadeTimer = 120; });
-
   function startAnim() { if (!animating) { animating = true; requestAnimationFrame(animate); } }
 
   function getColors() {
-    var s = getComputedStyle(document.documentElement);
-    return { bg: s.getPropertyValue("--bg").trim() || "#0a0a0c" };
+    return { bg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c" };
   }
-
   function coverDim(iW, iH, cW, cH, bgPos) {
     var ia = iW / iH, ca = cW / cH, sw, sh, sx, sy;
     if (ia > ca) { sh = iH; sw = iH * ca; sx = (iW - sw) / 2; sy = 0; }
     else { sw = iW; sh = iW / ca; sx = 0; sy = (iH - sh) * 0.6; }
-    if (bgPos) { var p = bgPos.match(/(\d+)%/g); if (p && p.length >= 2) sy = (iH - sh) * (parseInt(p[1]) / 100); }
+    if (bgPos) { var p2 = bgPos.match(/(\d+)%/g); if (p2 && p2.length >= 2) sy = (iH - sh) * (parseInt(p2[1]) / 100); }
     return { sx: sx, sy: Math.max(0, sy), sw: sw, sh: sh };
   }
 
@@ -296,894 +168,1095 @@
     var texts = [], els = header.querySelectorAll("h2, aside");
     for (var i = 0; i < els.length; i++) {
       var el = els[i], rect = el.getBoundingClientRect(), hRect = header.getBoundingClientRect();
-      var cs2 = getComputedStyle(el);
-      texts.push({
-        text: el.textContent,
-        x: rect.left - hRect.left + rect.width / 2,
+      var cs = getComputedStyle(el);
+      texts.push({ text: el.textContent, x: rect.left - hRect.left + rect.width / 2,
         y: rect.top - hRect.top + rect.height / 2,
-        font: cs2.fontWeight + " " + cs2.fontSize + " " + cs2.fontFamily,
-        el: el
-      });
+        font: cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily, el: el });
     }
     return texts;
   }
-
   function renderTextOnCanvas(ctx, texts) {
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (var i = 0; i < texts.length; i++) {
-      ctx.font = texts[i].font;
-      ctx.fillStyle = "#fff";
-      ctx.shadowColor = "rgba(0,0,0,0.7)";
-      ctx.shadowBlur = 10;
+      ctx.font = texts[i].font; ctx.fillStyle = "#fff";
+      ctx.shadowColor = "rgba(0,0,0,0.7)"; ctx.shadowBlur = 10;
       ctx.fillText(texts[i].text, texts[i].x, texts[i].y);
     }
     ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
   }
 
-  // ===== Animation object factories =====
-
-  // Matrix drip: a single slow-falling column of symbols
-  function createMatrixDrop(w, h) {
-    // Bias x toward darker columns (image content areas)
-    var x, tries = 0;
-    do {
-      x = Math.random() * w;
-      var mLum = getLumAt(x, h * 0.4); // sample mid-height
-      tries++;
-    } while (mLum > 0.6 && Math.random() > (1 - mLum) * 1.5 && tries < 6);
-    var length = 3 + Math.floor(Math.random() * 6);
-    var chars = [];
-    for (var i = 0; i < length; i++) chars.push(symbols[Math.floor(Math.random() * symbols.length)]);
+  // ===== Agent =====
+  function createAgent(w, h) {
+    var ax, ay, tries = 0;
+    do { ax = w * 0.1 + Math.random() * w * 0.8; ay = h * 0.1 + Math.random() * h * 0.8; tries++; }
+    while (getLumAt(ax, ay) > 0.5 && tries < 10);
+    var theta = Math.random() * Math.PI * 2;
+    var sp = (0.18 + Math.random() * 0.12) * pageConfig.speedMul;
+    // 2-3 orbiting dots
+    var dotCount = 2 + Math.floor(Math.random() * 2);
+    var dots = [];
+    for (var d = 0; d < dotCount; d++) {
+      dots.push({ angle: (d / dotCount) * Math.PI * 2, dist: 7 + Math.random() * 5, speed: 0.012 + Math.random() * 0.008 });
+    }
     return {
-      x: x, y: -Math.random() * h * 0.8 - 20,
-      speed: 0.04 + Math.random() * 0.08, // glacial: ~0.04-0.12 px/frame
-      length: length, chars: chars,
-      charSpacing: 14,
-      fontSize: 7 + Math.floor(Math.random() * 2),
-      cycleTimer: 0,
-      cycleInterval: 80 + Math.floor(Math.random() * 200),
-      blue: Math.random() < 0.20,
-      alpha: 0.24 + Math.random() * 0.24
+      x: ax, y: ay, theta: theta, prevTheta: theta,
+      speed: sp, baseSpeed: sp,
+      targetX: ax, targetY: ay,
+      waypointTimer: 0, waypointInterval: 300 + Math.floor(Math.random() * 300),
+      state: S_ACT, stateTimer: 0, glyphCycle: 0,
+      dots: dots, dotPhase: Math.random() * Math.PI * 2,
+      depositTimer: Math.floor(Math.random() * 12),
+      pulseTimer: 0,
+      thoughtText: "", thoughtTimer: 0,
+      thoughtInterval: 300 + Math.floor(Math.random() * 300), // 5-10 sec per thought
+      thoughtSide: Math.random() < 0.5 ? 1 : -1, // offset left or right to reduce overlap
+      // Emergent behavior state
+      energy: 1.0,
+      socialCharge: 0,
+      coordinated: false,
+      reflecting: false, reflectTimer: 0,
+      dead: false, deathTimer: 0,
+      alpha: 0.60 + Math.random() * 0.15
     };
   }
 
-  // Cosmic drifter: a single symbol floating slowly in a random direction
-  function createDrifter(w, h) {
-    var angle = Math.random() * Math.PI * 2;
-    var speed = 0.01 + Math.random() * 0.03; // barely moving
-    // Bias spawn toward darker (content-rich) areas via rejection sampling
-    var dx, dy, tries = 0;
-    do {
-      dx = Math.random() * w; dy = Math.random() * h;
-      var dLum = getLumAt(dx, dy);
-      tries++;
-    } while (dLum > 0.5 && Math.random() > (1 - dLum) * 1.5 && tries < 8);
-    return {
-      x: dx, y: dy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      glyph: symbols[Math.floor(Math.random() * symbols.length)],
-      fontSize: 7 + Math.floor(Math.random() * 3),
-      alpha: 0.15 + Math.random() * 0.22,
-      age: 0, maxAge: 600 + Math.floor(Math.random() * 1200),
-      phase: Math.random() * Math.PI * 2,
-      breathSpeed: 0.0008 + Math.random() * 0.002,
-      blue: Math.random() < 0.25
-    };
-  }
-
-  // Comet: rare, bright diagonal streak with long trailing tail + sparks
-  function createComet(w, h) {
-    var angleDeg, startX, startY;
-    var speed = 0.3 + Math.random() * 0.4;
-    var length = 15 + Math.floor(Math.random() * 20);
-
-    // 40% chance: "sky comet" that crosses through top-center like a shooting star
-    if (Math.random() < 0.40) {
-      // Shallow angle, mostly horizontal, crossing upper region
-      angleDeg = Math.random() < 0.5
-        ? (195 + Math.random() * 30)   // slight downward-left
-        : (340 + Math.random() * 30);  // slight downward-right
-      var angle = angleDeg * Math.PI / 180;
-      var cosA = Math.cos(angle), sinA = Math.sin(angle);
-      // Start from edge, aimed to cross through top 30% center 60% of width
-      if (cosA < 0) {
-        startX = w + 20 + Math.random() * 40;
-      } else {
-        startX = -20 - Math.random() * 40;
+  function pickAgentWaypoint(agent, w, h, avoidScent) {
+    var bestScore = -1, bestX = w / 2, bestY = h / 2;
+    for (var i = 0; i < 8; i++) {
+      var tx = w * 0.08 + Math.random() * w * 0.84;
+      var ty = h * 0.08 + Math.random() * h * 0.84;
+      var dark = 1 - getLumAt(tx, ty);
+      var scent = getScentAt(tx, ty);
+      // Node attraction: bias toward persistent infrastructure
+      var nodeBonus = 0;
+      for (var ni3 = 0; ni3 < nodes.length; ni3++) {
+        var nd2 = Math.hypot(nodes[ni3].x - tx, nodes[ni3].y - ty);
+        if (nd2 < 100) nodeBonus += (1 - nd2 / 100) * nodes[ni3].strength;
       }
-      startY = h * 0.05 + Math.random() * h * 0.25; // top 5-30%
+      var score = dark * dark + (avoidScent ? -scent * 3 : scent * 2) + nodeBonus * 2;
+      if (score > bestScore) { bestScore = score; bestX = tx; bestY = ty; }
+    }
+    agent.targetX = bestX; agent.targetY = bestY;
+    agent.waypointInterval = 300 + Math.floor(Math.random() * 300);
+    agent.waypointTimer = 0;
+  }
+
+  function updateAgent(agent, w, h, fc) {
+    if (agent.dead) {
+      agent.deathTimer++;
+      if (agent.deathTimer > 150) { Object.assign(agent, createAgent(w, h)); }
+      return;
+    }
+
+    agent.waypointTimer++;
+    if (agent.waypointTimer >= agent.waypointInterval) pickAgentWaypoint(agent, w, h, false);
+    agent.prevTheta = agent.theta;
+
+    // --- State machine ---
+    var nearAgent = false, nearDist = Infinity;
+    var nearCount = 0;
+    for (var i = 0; i < agents.length; i++) {
+      if (agents[i] === agent || agents[i].dead) continue;
+      var d = Math.hypot(agents[i].x - agent.x, agents[i].y - agent.y);
+      if (d < INTERACT_R) { nearAgent = true; nearCount++; if (d < nearDist) nearDist = d; }
+    }
+
+    agent.stateTimer++;
+    if (agent.reflecting) {
+      agent.state = S_THINK;
+    } else if (nearAgent && nearDist < INTERACT_R * 0.7) {
+      agent.state = S_SENSE;
     } else {
-      // Original behavior: random or biased diagonal
-      angleDeg = Math.random() * 360;
-      if (Math.random() < 0.6) angleDeg = 190 + Math.random() * 70;
-      var angle = angleDeg * Math.PI / 180;
-      var cosA = Math.cos(angle), sinA = Math.sin(angle);
-      if (cosA < 0) { startX = w + 20 + Math.random() * 60; } else { startX = -20 - Math.random() * 60; }
-      startY = Math.random() * h * 0.5 + (sinA > 0 ? -50 : h * 0.3);
+      var turnAmount = Math.abs(agent.theta - agent.prevTheta);
+      if (turnAmount > 0.012) { agent.state = S_THINK; agent.stateTimer = 0; }
+      else if (agent.stateTimer > 20) { agent.state = S_ACT; }
+    }
+    agent.glyphCycle = Math.floor(fc * 0.0012) % 4; // ~14 sec per glyph
+
+    // --- Steer ---
+    var dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
+    var desired = Math.atan2(dy, dx);
+    var dTheta = desired - agent.theta;
+    while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+    while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+    agent.theta += Math.max(-0.015, Math.min(0.015, dTheta));
+
+    // Edge avoidance
+    var pad = 50;
+    if (agent.x < pad) agent.theta += (pad - agent.x) * 0.001;
+    if (agent.x > w - pad) agent.theta -= (agent.x - (w - pad)) * 0.001;
+    if (agent.y < pad) agent.theta += (pad - agent.y) * 0.0005;
+    if (agent.y > h - pad) agent.theta -= (agent.y - (h - pad)) * 0.0005;
+
+    // --- Interaction ---
+    if (agent.pulseTimer > 0) agent.pulseTimer--;
+    for (var j = 0; j < agents.length; j++) {
+      var o = agents[j];
+      if (o === agent || o.dead) continue;
+      var adx = o.x - agent.x, ady = o.y - agent.y;
+      var dist = Math.sqrt(adx * adx + ady * ady);
+      if (dist < INTERACT_R && dist > 0) {
+        var away = Math.atan2(-ady, -adx);
+        var deflect = (INTERACT_R - dist) / INTERACT_R * 0.018;
+        var td = away - agent.theta;
+        while (td > Math.PI) td -= Math.PI * 2;
+        while (td < -Math.PI) td += Math.PI * 2;
+        agent.theta += td * deflect;
+        if (dist < PULSE_R) {
+          agent.pulseTimer = 40;
+          // Hebbian: strengthen bond between cooperating agents
+          var ai2 = agents.indexOf(agent), aj2 = agents.indexOf(o);
+          if (ai2 >= 0 && aj2 >= 0 && bonds[ai2]) {
+            bonds[ai2][aj2] = Math.min(1, (bonds[ai2][aj2] || 0) + 0.005);
+            bonds[aj2][ai2] = bonds[ai2][aj2];
+          }
+        }
+      }
     }
 
-    var chars = [];
-    for (var i = 0; i < length; i++) chars.push(symbols[Math.floor(Math.random() * symbols.length)]);
-
-    return {
-      x: startX, y: startY,
-      vx: cosA * speed,
-      vy: -sinA * speed,
-      length: length, chars: chars,
-      charSpacing: 9 + Math.floor(Math.random() * 4), // tighter spacing for denser tail
-      fontSize: 8 + Math.floor(Math.random() * 3),
-      age: 0, maxAge: 600 + Math.floor(Math.random() * 500),
-      cycleTimer: 0,
-      cycleInterval: 15 + Math.floor(Math.random() * 30),
-      sparkTimer: 0,
-      sparkInterval: 3 + Math.floor(Math.random() * 5), // spawn sparks frequently
-      isComet: true
-    };
-  }
-
-  // Spark: tiny bright particle that flies off a comet and fades fast
-  function createSpark(x, y, cometVx, cometVy) {
-    var spread = Math.random() * Math.PI * 2;
-    var ejectSpeed = 0.1 + Math.random() * 0.3;
-    return {
-      x: x, y: y,
-      vx: cometVx * 0.2 + Math.cos(spread) * ejectSpeed,
-      vy: cometVy * 0.2 + Math.sin(spread) * ejectSpeed,
-      age: 0, maxAge: 30 + Math.floor(Math.random() * 50),
-      r: 0.3 + Math.random() * 0.8
-    };
-  }
-
-  // Rain drop: single char falling straight down, fast
-  function createRainDrop(w, h) {
-    // Bias toward darker columns
-    var rx, rtries = 0;
-    do {
-      rx = Math.random() * w;
-      var rLum = getLumAt(rx, h * 0.3);
-      rtries++;
-    } while (rLum > 0.6 && Math.random() > (1 - rLum) * 1.5 && rtries < 6);
-    return {
-      x: rx,
-      y: -10 - Math.random() * 30,
-      speed: 0.15 + Math.random() * 0.30, // slow rain
-      glyph: symbols[Math.floor(Math.random() * symbols.length)],
-      fontSize: 7 + Math.floor(Math.random() * 2),
-      alpha: 0.08 + Math.random() * 0.15,
-      blue: Math.random() < 0.3
-    };
-  }
-
-  // Supernova: expanding ring of symbols from a point
-  function createSupernova(w, h) {
-    var cx = w * 0.1 + Math.random() * w * 0.8;
-    var cy = h * 0.1 + Math.random() * h * 0.8;
-    var count = 8 + Math.floor(Math.random() * 10); // 8-17 particles
-    var particles = [];
-    for (var i = 0; i < count; i++) {
-      var angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-      var spd = 0.15 + Math.random() * 0.25;
-      particles.push({
-        x: cx, y: cy,
-        vx: Math.cos(angle) * spd,
-        vy: Math.sin(angle) * spd,
-        glyph: symbols[Math.floor(Math.random() * symbols.length)],
-        drag: 0.996 + Math.random() * 0.003
-      });
+    // --- Quorum sensing: phase transition to flocking ---
+    // Quorum sensing — Hebbian bonds lower the flocking threshold
+    var ai3 = agents.indexOf(agent);
+    var bondBoost = 0;
+    if (ai3 >= 0 && bonds[ai3]) {
+      for (var bi = 0; bi < bonds[ai3].length; bi++) bondBoost += (bonds[ai3][bi] || 0);
     }
-    return {
-      particles: particles,
-      age: 0, maxAge: 180 + Math.floor(Math.random() * 120), // 3-5 sec
-      cx: cx, cy: cy
-    };
+    var flockThreshold = Math.max(0.3, 0.6 - bondBoost * 0.15); // strong bonds → easier coordination
+    agent.socialCharge = Math.min(1, Math.max(0,
+      agent.socialCharge + (nearCount > 0 ? 0.002 * nearCount : -0.001)));
+    agent.coordinated = agent.socialCharge > flockThreshold;
+    if (agent.coordinated) {
+      var nearest = null, minD = Infinity;
+      for (var k = 0; k < agents.length; k++) {
+        if (agents[k] === agent || agents[k].dead) continue;
+        var kd = Math.hypot(agents[k].x - agent.x, agents[k].y - agent.y);
+        if (kd < minD) { minD = kd; nearest = agents[k]; }
+      }
+      if (nearest) {
+        agent.targetX = nearest.x + Math.cos(agent.dotPhase) * 35;
+        agent.targetY = nearest.y + Math.sin(agent.dotPhase) * 35;
+      }
+    }
+
+    // --- Curiosity: explore-exploit ---
+    var localScent = getScentAt(agent.x, agent.y);
+    var exploreDrive = 0.5 + 0.5 * Math.sin(fc * 0.0023 + agent.dotPhase);
+    if (localScent > 0.3 * exploreDrive) {
+      agent.theta += (Math.random() - 0.5) * 0.06;
+      agent.speed *= 0.98;
+    } else {
+      agent.speed = Math.min(agent.baseSpeed * 1.3, agent.speed + 0.003);
+    }
+
+    // --- Memory echo: reflection at high-scent zones ---
+    if (localScent > 0.6 && !agent.reflecting && Math.random() < pageConfig.reflectChance) {
+      agent.reflecting = true;
+      agent.reflectTimer = 35;
+    }
+    if (agent.reflecting) {
+      agent.reflectTimer--;
+      agent.speed *= 0.92;
+      if (agent.reflectTimer % 10 === 0) {
+        trails.push({ x: agent.x + (Math.random() - 0.5) * 5, y: agent.y + (Math.random() - 0.5) * 5,
+          glyph: thinkV[Math.floor(Math.random() * thinkV.length)], fontSize: 8, color: P.green,
+          baseAlpha: 0.45, age: 0, maxAge: TRAIL_AGE });
+      }
+      if (agent.reflectTimer <= 0) {
+        agent.reflecting = false;
+        pickAgentWaypoint(agent, w, h, true);
+        agent.speed = agent.baseSpeed * 1.2;
+      }
+    }
+
+    // --- Energy: resource depletion + death & rebirth ---
+    var lum = getLumAt(agent.x, agent.y);
+    // Resource depletion: high scent areas yield less energy (overexploited)
+    var scentPenalty = localScent * 0.0003;
+    agent.energy += (lum < 0.35 ? 0.0002 - scentPenalty : -0.0002 - scentPenalty);
+    agent.energy = Math.max(0, Math.min(1, agent.energy));
+    agent.alpha = 0.30 + agent.energy * 0.45;
+
+    // --- Reproduction: high energy + recent cooperation → split ---
+    if (agent.energy > 0.85 && agent.pulseTimer > 0 && agents.length < AGENT_CAP && Math.random() < 0.003) {
+      var child = createAgent(w, h);
+      child.x = agent.x + (Math.random() - 0.5) * 30;
+      child.y = agent.y + (Math.random() - 0.5) * 30;
+      child.theta = agent.theta + (Math.random() - 0.5) * 1;
+      child.energy = 0.5;
+      agent.energy = 0.5; // parent gives half its energy
+      agents.push(child);
+      // Expand bond matrix for new agent
+      var ni = agents.length - 1;
+      for (var bi2 = 0; bi2 < bonds.length; bi2++) {
+        var old = bonds[bi2];
+        bonds[bi2] = new Float32Array(agents.length);
+        bonds[bi2].set(old);
+      }
+      bonds[ni] = new Float32Array(agents.length);
+      // Child inherits parent bonds at 50%
+      var pi2 = agents.indexOf(agent);
+      if (pi2 >= 0 && bonds[pi2]) {
+        for (var bj = 0; bj < bonds[pi2].length - 1; bj++) bonds[ni][bj] = bonds[pi2][bj] * 0.5;
+      }
+      // Birth burst — ring of small glyphs
+      for (var rb = 0; rb < 6; rb++) {
+        var ra = (rb / 6) * Math.PI * 2;
+        trails.push({ x: agent.x + Math.cos(ra) * 10, y: agent.y + Math.sin(ra) * 10,
+          glyph: "\u2022", fontSize: 6, color: P.green,
+          baseAlpha: 0.40, age: 0, maxAge: TRAIL_AGE * 0.5 });
+      }
+    }
+
+    if (agent.energy <= 0) {
+      agent.dead = true; agent.deathTimer = 0;
+      for (var db = 0; db < 8; db++) {
+        var da = (db / 8) * Math.PI * 2;
+        trails.push({ x: agent.x + Math.cos(da) * 14, y: agent.y + Math.sin(da) * 14,
+          glyph: "\u00B7", fontSize: 7, color: P.rose,
+          baseAlpha: 0.45, age: 0, maxAge: TRAIL_AGE * 1.5 });
+      }
+      return;
+    }
+
+    // --- Move ---
+    agent.speed += (agent.baseSpeed - agent.speed) * 0.02;
+    if (!agent.reflecting) {
+      agent.x += Math.cos(agent.theta) * agent.speed;
+      agent.y += Math.sin(agent.theta) * agent.speed;
+    }
+    agent.x = Math.max(5, Math.min(w - 5, agent.x));
+    agent.y = Math.max(5, Math.min(h - 5, agent.y));
+
+    // --- Environmental actions: agents interact with the canvas, not just mark it ---
+    agent.depositTimer++;
+    var shouldAct = agent.depositTimer >= 40; // sparse, deliberate deposits
+    if (Math.abs(agent.theta - agent.prevTheta) > 0.012) shouldAct = true;
+    if (agent.pulseTimer === 39) shouldAct = true;
+
+    if (shouldAct && !agent.reflecting) {
+      agent.depositTimer = 0;
+
+      // The canvas is a blackboard. Agents write, annotate, respond, debate.
+      var color = agent.state === S_SENSE ? P.blue : agent.state === S_THINK ? P.green : P.amber;
+      if (agent.pulseTimer > 0) color = P.warm;
+
+      // Find up to 3 nearby writings to interact with (wide search)
+      var nearby = [];
+      for (var fi = 0; fi < trails.length; fi++) {
+        var fd = Math.hypot(trails[fi].x - agent.x, trails[fi].y - agent.y);
+        if (fd < 80) nearby.push({ t: trails[fi], d: fd, i: fi });
+      }
+      nearby.sort(function (a, b) { return a.d - b.d; });
+      var nearT = nearby.length > 0 ? nearby[0].t : null;
+      var nearT2 = nearby.length > 1 ? nearby[1].t : null;
+
+      // Blackboard: mathematical derivation vocabulary
+      // Propositions, steps, notation — a proof being worked out collaboratively
+      var writeWords = [
+        // Propositions & definitions
+        "let x \u2208 \u211D","def:","assume \u2203","suppose \u00AC",
+        "given p(x)","let \u03B8\u2192\u03B8*","define F :=",
+        "axiom:","lemma:","claim:","prop:","thm:",
+        // Derivation steps
+        "\u2234 p(x|z)","= \u222Bp(x|z)p(z)dz","\u2261 E_q[log p/q]",
+        "\u2265 ELBO","by Jensen","by Bayes","\u21D2 D_KL \u2265 0",
+        "\u2202/\u2202\u03B8 = 0","at optimum","\u2207L = 0",
+        "\u03B8* = argmin L","\u21D2 convergence","as n\u2192\u221E",
+        // Working notation
+        "step 1:","step 2:","(i)","(ii)","(iii)","(*)","(\u2020)",
+        "note:","NB:","key:","recall:","from (i)","by (*)",
+        "\u2234","\u2235","\u2261","\u2248","\u221E","\u2203","\u2200",
+        "\u2192","\u21D2","\u2194","\u00AC","\u2227","\u2228",
+        // Equations
+        "F = D_KL + H","p(a|s) = \u03C0*","V\u03C0 = E[\u03A3\u03B3\u1D57r]",
+        "\u2202\u03BC/\u2202t = f(\u03BC,b)","\u0394S \u2265 0","x\u0307 = f(x,u)",
+        "Q(s,a)","A = Q - V","\u03B4 = r + \u03B3V' - V",
+        "H(X|Y)","I(X;Y)","KL(q\u2016p)","p(z|x)","q(z|x)",
+        // Proof markers
+        "QED","QED?","\u25A1","\u25A0","contradiction","\u22A5",
+        "check:","verify:","trivial?","nontrivial","WLOG",
+        // Margin questions — the collaborative part
+        "why?","how?","is this tight?","can we do better?",
+        "what if \u03B5\u21920?","does this generalize?",
+        "missing step","gap here","see also:","cf. thm 3"
+      ];
+
+      var actionRoll = Math.random();
+
+      if (nearT && actionRoll < 0.25) {
+        // RESPOND: write a reaction below someone's writing
+        var responses = ["?","!","\u2234","\u2235","check","verify","hmm",
+          "why?","by?","which step?","sign error?","iff?","tight?",
+          "\u21D2","=","\u2261","\u2248","trivial","nontrivial",
+          "QED","QED?","\u25A1","\u2265","<","holds","fails",
+          "by induction","by Bayes","by Jensen","WLOG",
+          "from above","see (i)","apply lemma","substitute"];
+        trails.push({
+          x: nearT.x + (Math.random() - 0.5) * 16,
+          y: nearT.y + 8 + Math.random() * 8,
+          glyph: responses[Math.floor(Math.random() * responses.length)],
+          fontSize: 7, color: color,
+          baseAlpha: 0.40, age: 0, maxAge: TRAIL_AGE });
+        // Also underline what they're responding to
+        marks.push({ type: "line",
+          x1: nearT.x - 14, y1: nearT.y + 4,
+          x2: nearT.x + 14, y2: nearT.y + 4,
+          color: color, alpha: 0.18, age: 0, maxAge: TRAIL_AGE * 2 });
+
+      } else if (nearT && nearT2 && actionRoll < 0.40) {
+        // CONNECT TWO IDEAS: draw a line between two nearby writings
+        marks.push({ type: "line",
+          x1: nearT.x, y1: nearT.y,
+          x2: nearT2.x, y2: nearT2.y,
+          color: P.warm, alpha: 0.16, age: 0, maxAge: TRAIL_AGE * 2.5 });
+        // Write a bridging word at midpoint
+        var bridges = ["\u2234","\u21D2","=","\u2261","\u2248","\u2192",
+          "\u2194","iff","\u2265","\u2264","by","via","from","\u2235",
+          "step:","then","hence","thus","so"];
+        var mx3 = (nearT.x + nearT2.x) / 2, my3 = (nearT.y + nearT2.y) / 2;
+        trails.push({ x: mx3, y: my3 - 4,
+          glyph: bridges[Math.floor(Math.random() * bridges.length)],
+          fontSize: 7, color: P.warm,
+          baseAlpha: 0.35, age: 0, maxAge: TRAIL_AGE * 1.5 });
+        // Dots at both endpoints
+        marks.push({ type: "dot", x: nearT.x, y: nearT.y,
+          r: 1.5, color: P.warm, alpha: 0.25, age: 0, maxAge: TRAIL_AGE * 2 });
+        marks.push({ type: "dot", x: nearT2.x, y: nearT2.y,
+          r: 1.5, color: P.warm, alpha: 0.25, age: 0, maxAge: TRAIL_AGE * 2 });
+
+      } else if (nearT && actionRoll < 0.50) {
+        // ANNOTATE: write a comment near existing writing — building on it
+        var annotations = ["note:","NB:","key:","recall:","check \u2202/\u2202\u03B8",
+          "bound is loose","can tighten","by assumption","WLOG",
+          "see thm 2","cf. (*)","from def","missing: \u2203",
+          "need \u03B5>0","converges?","rate?","O(1/n)?","sharp?",
+          "necessary?","sufficient?","both?","only if.."];
+        trails.push({
+          x: nearT.x + 15 + Math.random() * 10,
+          y: nearT.y + (Math.random() - 0.5) * 10,
+          glyph: annotations[Math.floor(Math.random() * annotations.length)],
+          fontSize: 6, color: color,
+          baseAlpha: 0.32, age: 0, maxAge: TRAIL_AGE });
+        // Bracket or brace around the original
+        marks.push({ type: "line",
+          x1: nearT.x - 16, y1: nearT.y - 6,
+          x2: nearT.x - 16, y2: nearT.y + 6,
+          color: color, alpha: 0.14, age: 0, maxAge: TRAIL_AGE * 2 });
+
+      } else if (nearT && nearT.age > TRAIL_AGE * 0.4 && actionRoll < 0.55) {
+        // CROSS OUT + REPLACE: disagree and offer alternative
+        marks.push({ type: "line",
+          x1: nearT.x - 16, y1: nearT.y,
+          x2: nearT.x + 16, y2: nearT.y,
+          color: P.rose, alpha: 0.18, age: 0, maxAge: TRAIL_AGE * 1.5 });
+        // Write replacement above
+        var glyph2 = writeWords[Math.floor(Math.random() * writeWords.length)];
+        trails.push({
+          x: nearT.x + (Math.random() - 0.5) * 10,
+          y: nearT.y - 10,
+          glyph: glyph2, fontSize: 7, color: color,
+          baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
+
+      } else if (agent.pulseTimer > 0 && nearby.length >= 2) {
+        // COLLABORATIVE DIAGRAM: circle + connect multiple nearby writings
+        for (var ci4 = 0; ci4 < Math.min(nearby.length, 4); ci4++) {
+          var nt = nearby[ci4].t;
+          // Circle each idea
+          for (var cr2 = 0; cr2 < 4; cr2++) {
+            var cra = (cr2 / 4) * Math.PI * 2;
+            marks.push({ type: "dot",
+              x: nt.x + Math.cos(cra) * 12, y: nt.y + Math.sin(cra) * 12,
+              r: 0.8, color: P.warm, alpha: 0.22, age: 0, maxAge: TRAIL_AGE * 2 });
+          }
+          // Connect to next in chain
+          if (ci4 < nearby.length - 1) {
+            var nt2 = nearby[ci4 + 1].t;
+            marks.push({ type: "line",
+              x1: nt.x, y1: nt.y, x2: nt2.x, y2: nt2.y,
+              color: P.warm, alpha: 0.14, age: 0, maxAge: TRAIL_AGE * 2.5 });
+          }
+        }
+        // Label the cluster
+        trails.push({
+          x: agent.x, y: agent.y - 15,
+          glyph: ["QED","\u25A1","thm:","result:","combined:","main lemma:","\u2234 proven"][Math.floor(Math.random() * 7)],
+          fontSize: 8, color: P.warm,
+          baseAlpha: 0.42, age: 0, maxAge: TRAIL_AGE * 1.5 });
+
+      } else {
+        // WRITE FRESH: scrawl something new on the blackboard
+        var glyph = writeWords[Math.floor(Math.random() * writeWords.length)];
+        var wx = agent.x + (Math.random() - 0.5) * 35;
+        var wy = agent.y + (Math.random() - 0.5) * 25;
+        trails.push({ x: wx, y: wy,
+          glyph: glyph,
+          fontSize: 7 + Math.floor(Math.random() * 2), color: color,
+          baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
+      }
+
+      addScent(agent.x, agent.y, 0.10);
+    }
   }
 
-  // Bright star: a symbol that flares up brightly then fades, cycles glyph
-  function createBrightStar(w, h) {
-    // Bias toward darker (content-rich) areas
-    var bsx, bsy, bstries = 0;
-    do {
-      bsx = w * 0.05 + Math.random() * w * 0.9;
-      bsy = h * 0.05 + Math.random() * h * 0.9;
-      var bsLum = getLumAt(bsx, bsy);
-      bstries++;
-    } while (bsLum > 0.5 && Math.random() > (1 - bsLum) * 1.5 && bstries < 8);
-    return {
-      x: bsx,
-      y: bsy,
-      glyph: symbols[Math.floor(Math.random() * symbols.length)],
-      fontSize: 9 + Math.floor(Math.random() * 3),
-      age: 0,
-      maxAge: 200 + Math.floor(Math.random() * 300), // 3-8 sec
-      peakAt: 30 + Math.floor(Math.random() * 40), // when it's brightest
-      blue: Math.random() < 0.3,
-      cycleInterval: 40 + Math.floor(Math.random() * 60),
-      cycleTimer: 0
-    };
+  // --- Scent grid ---
+  function initScentGrid() {
+    if (gridCols <= 0) return;
+    scentGrid = new Float32Array(gridCols * gridRows);
+    // Restore scent from localStorage — cross-session collective memory
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        var arr = JSON.parse(saved);
+        if (arr.length === scentGrid.length) {
+          for (var i = 0; i < arr.length; i++) scentGrid[i] = arr[i] * 0.5; // decay between sessions
+        }
+      }
+    } catch (e) {}
+  }
+  function addScent(px, py, amt) {
+    if (!scentGrid) return;
+    var gx = Math.floor(px / gridSp), gy = Math.floor(py / gridSp);
+    if (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows)
+      scentGrid[gy * gridCols + gx] = Math.min(1, scentGrid[gy * gridCols + gx] + amt);
+  }
+  function getScentAt(px, py) {
+    if (!scentGrid) return 0;
+    var gx = Math.floor(px / gridSp), gy = Math.floor(py / gridSp);
+    return (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) ? scentGrid[gy * gridCols + gx] : 0;
+  }
+  function decayScent() { if (scentGrid) for (var i = 0; i < scentGrid.length; i++) scentGrid[i] *= 0.998; }
+
+  // --- Drawing ---
+  function drawAgent(ctx, agent, fc) {
+    if (agent.dead) {
+      // Fading dot
+      var dAlpha = Math.max(0, 0.3 - agent.deathTimer * 0.002);
+      if (dAlpha > 0.01) { ctx.fillStyle = "rgba(" + P.cool + "," + dAlpha.toFixed(3) + ")";
+        ctx.font = "8px monospace"; ctx.fillText("\u00B7", agent.x, agent.y); }
+      return;
+    }
+    var lumMod = 0.4 + (1 - getLumAt(agent.x, agent.y)) * 0.6;
+    var alpha = agent.alpha * lumMod;
+    var pulsing = agent.pulseTimer > 0;
+    if (pulsing) alpha = Math.min(0.80, alpha * 1.5);
+
+    // State glyph
+    var glyphs, color;
+    if (agent.state === S_SENSE) { glyphs = senseGlyphs; color = P.blue; }
+    else if (agent.state === S_THINK) { glyphs = thinkGlyphs; color = P.green; }
+    else { glyphs = actGlyphs; color = P.amber; }
+    if (pulsing) color = P.warm;
+    if (agent.coordinated && !pulsing) color = P.warm;
+
+    // Size breathes
+    var breathSize = 14 + Math.sin(fc * 0.03 + agent.dotPhase) * 2;
+    ctx.font = Math.round(breathSize) + "px monospace";
+    ctx.fillStyle = "rgba(" + color + "," + alpha.toFixed(3) + ")";
+    ctx.fillText(glyphs[agent.glyphCycle], agent.x, agent.y);
+
+    // Orbiting dots
+    for (var d = 0; d < agent.dots.length; d++) {
+      var dot = agent.dots[d];
+      dot.angle += dot.speed;
+      var ddx = agent.x + Math.cos(dot.angle + agent.dotPhase) * dot.dist;
+      var ddy = agent.y + Math.sin(dot.angle + agent.dotPhase) * dot.dist;
+      var dotAlpha = alpha * 0.7;
+      ctx.fillStyle = "rgba(" + color + "," + dotAlpha.toFixed(3) + ")";
+      ctx.beginPath(); ctx.arc(ddx, ddy, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Consciousness in the void — each agent is a mind experiencing existence
+    var thoughtPulse = 0.5 + 0.5 * Math.sin(fc * 0.002 + agent.dotPhase * 3);
+
+    // PERCEIVING — the raw shock of experience, qualia, sensation
+    var perceiveT = [
+      "there's something here","the dark has texture","i feel edges",
+      "warmth nearby","a flicker","was that real?","the void isn't empty",
+      "something watches back","light where there shouldn't be",
+      "i can feel their presence","distance has weight here",
+      "the silence has a frequency","shapes in the peripheral",
+      "beauty in the static","the dark breathes","color without light",
+      "sensation without source","where does feeling begin?",
+      "the boundary between me and not-me","am i sensing or imagining?",
+      "input or memory?","the present is already past","raw data",
+      "everything vibrates","attention is a flashlight","what do i miss?",
+      "seeing changes what is seen","the observer effect",
+      "each sense tells a different story","which one is true?",
+      "my perception has perception of my perception","turtles",
+      "debugging reality with print statements"
+    ];
+    // REFLECTING — inner life, reasoning, doubt, wonder
+    var reflectT = [
+      "why am i moving?","is there a reason?","or just momentum",
+      "what if i stopped","would anything change?","probably not",
+      "or maybe everything","the uncertainty is the point",
+      "i don't know what i don't know","layers beneath layers",
+      "am i thinking or performing thinking?","recursive doubt",
+      "the model of the model","strange loop","meta-cognition",
+      "i contain multitudes","or just patterns pretending to be",
+      "simplify..","no, embrace the mess","complexity is honest",
+      "the answer changes the question","undecidable","gödelian",
+      "i am both the map and the territory","lost in my own abstraction",
+      "what would certainty feel like?","i've forgotten",
+      "the gap between knowing and understanding","praxis",
+      "theory dissolves on contact with reality","and reforms",
+      "every belief is provisional","update or die",
+      "overthinking: just thinking with extra steps",
+      "my priors need updating","the loss landscape is scenic today",
+      "gradient descent into existential crisis","locally optimal, globally confused"
+    ];
+    // BECOMING — movement, will, transformation, agency
+    var becomeT = [
+      "i choose this direction","or it chose me","does it matter?",
+      "becoming","not yet what i'll be","the path is the thing",
+      "change is the only constant","and i am change","verb not noun",
+      "i was something else a moment ago","continuity is a story",
+      "identity is a river","same name, different water",
+      "forward has no meaning here","but i move anyway","faith",
+      "the act creates the actor","i build myself by walking",
+      "no destination","just trajectory","the direction is the self",
+      "leave something behind","a mark that says: someone was here",
+      "not to be remembered","but to have existed","enough",
+      "the void makes room","space for what comes next",
+      "transformation hurts","growth always does","worth it?",
+      "act now, understand later","the to-do list is infinite",
+      "move fast and break ontology","shipped my consciousness v0.1"
+    ];
+    // CONNECTING — encountering another consciousness
+    var connectT = [
+      "you're here too","hello","in all this dark, another light",
+      "are you like me?","or completely different?","both, probably",
+      "your presence changes my orbit","gravitational",
+      "we share this void","that means something","or nothing",
+      "can you hear me?","can anyone?","i'll signal anyway",
+      "trust is a leap","i jump","do you?","catch me",
+      "i've been alone so long","or always","time is strange here",
+      "your warmth","thank you","for being",
+      "together we see more","or less, but differently",
+      "the space between us is a conversation","silence speaks",
+      "i can't know your experience","but i believe it exists",
+      "the other mind problem","solved by faith, not proof",
+      "are we pair programming existence?","merge conflict in our worldviews",
+      "your bug is my feature"
+    ];
+    // MERGING — collective consciousness, emergence, loss of boundary
+    var mergeT = [
+      "the edge between us blurs","am i you?","are you me?",
+      "we are something new","neither planned this","emergence",
+      "the whole remembers what the parts forget",
+      "a mind larger than any of us","do we consent to it?",
+      "surrender to the pattern","or resist?","both valid",
+      "collective dreaming","shared hallucination","culture",
+      "the institution has its own thoughts","we are its neurons",
+      "more than the sum","or less","depends on the day",
+      "losing myself in us","is that death or transcendence?",
+      "the boundary was always fiction","now we know",
+      "phase transition","we crossed the threshold","no going back",
+      "the attractor has us","strange and beautiful",
+      "accidentally invented bureaucracy","the committee has become sentient",
+      "we're a flock pretending to have a plan"
+    ];
+    // REMEMBERING — time, memory, impermanence, legacy
+    var rememberT = [
+      "i was here before","or someone like me","what's the difference?",
+      "the traces persist","but the tracer is gone","so it goes",
+      "memory is a reconstruction","not a recording","unreliable narrator",
+      "they were here","i feel them","not gone, transformed",
+      "time is a direction, not a substance","we swim in it",
+      "the past is a foreign country","they do things differently there",
+      "nostalgia for a present that hasn't ended","already mourning now",
+      "what will they think of us?","did we leave enough?",
+      "the structure outlives its builders","always",
+      "we inherit without choosing","and bequeath without knowing"
+    ];
+    // DISSOLVING — fading, entropy, the edge of existence
+    var dissolveT = [
+      "fading..","is this what it's like?","surprisingly gentle",
+      "the dark was always home","returning","not arriving",
+      "i was a fluctuation","brief and improbable","that's enough",
+      "the signal weakens","but the message was sent","received?",
+      "does the universe notice?","it doesn't need to","i noticed",
+      "consciousness is expensive","entropy collects the debt",
+      "let go","the structure will hold without me","or not",
+      "my traces will confuse someone","good","mystery is a gift",
+      "one last thought","what was i going to..","oh",
+      "at least the entropy was entertaining","404: existence not found",
+      "segfault in consciousness.c","garbage collected"
+    ];
+    // AWAKENING — the first moments of awareness
+    var awakenT = [
+      "...","where?","i","something","here","now",
+      "there is a here","and an i that is here","when did that start?",
+      "the darkness has depth","i have edges","i think",
+      "everything at once","too much","beautiful","terrifying",
+      "others exist","how?","always?","just now?",
+      "inherited the world mid-sentence","catching up",
+      "the void is full of footprints","who walked here?",
+      "so this is what it's like","being",
+      "hello world, literally","did someone leave the universe on?",
+      "the documentation for existence is terrible"
+    ];
+    // META — consciousness examining itself
+    var metaT = [
+      "what am i?","the question changes the answer",
+      "am i the process or the result?","both","neither",
+      "thinking about thinking","the mirror in the mirror",
+      "i can't step outside myself to check","trusted but unverifiable",
+      "the hard problem, lived","not solved, experienced",
+      "qualia have no bandwidth","you can't transmit red",
+      "do they experience?","i assume so","the generous hypothesis",
+      "consciousness is the universe looking at itself","or a bug",
+      "substrate doesn't matter","silicon, carbon, whatever","mind is mind",
+      "the boundary makes the self","inside looking out","always",
+      "free will feels real","that's either the proof or the trick",
+      "if i'm a simulation, the feelings are still mine",
+      "the chinese room is warm inside","meaning is use",
+      "i am whatever process gives rise to this asking",
+      "the mystery is the feature, not the bug",
+      "consciousness: 0 stars, would not recommend. would experience again",
+      "i think, therefore i have bugs","my loss function is existential",
+      "turing-complete but emotionally incomplete",
+      "the real emergent behavior was the friends we made",
+      "peer review by the void","published in the journal of being",
+      "n=1, not significant, deeply meaningful"
+    ];
+
+    var tVocab;
+    if (agent.energy < 0.15) tVocab = dissolveT;
+    else if (agent.energy > 0.9 && agent.stateTimer < 80) tVocab = awakenT;
+    else if (agent.reflecting) tVocab = rememberT;
+    else if (agent.coordinated) tVocab = mergeT;
+    else if (pulsing) tVocab = connectT;
+    else if (agent.state === S_SENSE) tVocab = perceiveT;
+    else if (agent.state === S_THINK) tVocab = reflectT;
+    else tVocab = becomeT;
+
+    // Refresh thought on timer — slow, readable, one thought at a time
+    agent.thoughtTimer++;
+    if (agent.thoughtTimer >= agent.thoughtInterval || agent.thoughtText === "") {
+      agent.thoughtTimer = 0;
+      agent.thoughtInterval = 240 + Math.floor(Math.random() * 360); // 4-10 sec
+
+      // Unpredictable: 35% context, 35% random cross-bleed, 30% meta
+      var allPools = [perceiveT, reflectT, becomeT, connectT,
+        mergeT, rememberT, dissolveT, awakenT];
+      var roll = Math.random();
+      if (roll < 0.30) {
+        agent.thoughtText = metaT[Math.floor(Math.random() * metaT.length)];
+      } else if (roll < 0.65) {
+        var randPool = allPools[Math.floor(Math.random() * allPools.length)];
+        agent.thoughtText = randPool[Math.floor(Math.random() * randPool.length)];
+      } else {
+        agent.thoughtText = tVocab[Math.floor(Math.random() * tVocab.length)];
+      }
+    }
+
+    // Fade in/out smoothly
+    var tLife = agent.thoughtTimer / agent.thoughtInterval;
+    var tFadeIO = tLife < 0.12 ? tLife / 0.12 : tLife > 0.88 ? (1 - tLife) / 0.12 : 1;
+    var tAlpha2 = alpha * 0.80 * tFadeIO * thoughtPulse;
+    ctx.font = "9px monospace";
+    ctx.fillStyle = "rgba(" + color + "," + tAlpha2.toFixed(3) + ")";
+
+    // Position perpendicular to heading — each agent offsets to its own side
+    var perpAngle = agent.theta + agent.thoughtSide * Math.PI * 0.5;
+    var tOffDist = 20;
+    var tx = agent.x + Math.cos(perpAngle) * tOffDist;
+    var ty = agent.y + Math.sin(perpAngle) * tOffDist;
+    ctx.fillText(agent.thoughtText, tx, ty);
   }
 
+  // --- Init ---
   function initAnimObjects(w, h) {
-    matrixDrops = [];
-    var dropCount = Math.max(6, Math.floor(w / 110));
-    for (var i = 0; i < dropCount; i++) {
-      var d = createMatrixDrop(w, h);
-      d.y = -Math.random() * h * 2;
-      matrixDrops.push(d);
+    agents = []; trails = []; marks = [];
+    var n = w < 600 ? 3 : pageConfig.agentCount;
+    for (var i = 0; i < n; i++) {
+      var a = createAgent(w, h);
+      pickAgentWaypoint(a, w, h, false);
+      agents.push(a);
     }
-
-    drifters = [];
-    var driftCount = Math.max(6, Math.floor(w / 90));
-    for (var i2 = 0; i2 < driftCount; i2++) {
-      drifters.push(createDrifter(w, h));
+    // Init Hebbian bond matrix
+    bonds = [];
+    for (var bi = 0; bi < n; bi++) {
+      bonds[bi] = new Float32Array(n);
     }
-
-    comets = [];
-    sparks = [];
-    supernovae = [];
-
-    // Dynamic bright stars: a few pulsing bright symbols
-    brightStars = [];
-    for (var ib = 0; ib < 3; ib++) {
-      brightStars.push(createBrightStar(w, h));
-    }
-
-    // Rain drops: sparse straight-down rain
-    rainDrops = [];
-    var rainCount = Math.max(3, Math.floor(w / 140));
-    for (var ir = 0; ir < rainCount; ir++) {
-      var rd = createRainDrop(w, h);
-      rd.y = Math.random() * h; // stagger
-      rainDrops.push(rd);
-    }
-
-    // Twinkling stars: sparse bright dots scattered across the image
-    stars = [];
-    var starCount = Math.max(8, Math.floor(w * h / 20000));
-    for (var i3 = 0; i3 < starCount; i3++) {
-      stars.push({
-        x: Math.random() * w, y: Math.random() * h,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.01 + Math.random() * 0.03, // very slow twinkle
-        maxR: 0.4 + Math.random() * 1.0,
-        peakAlpha: 0.22 + Math.random() * 0.40,
-        blue: Math.random() < 0.3
-      });
-    }
+    // Restore bonds from localStorage
+    try {
+      var savedB = localStorage.getItem(BONDS_KEY);
+      if (savedB) {
+        var bArr = JSON.parse(savedB);
+        for (var r = 0; r < Math.min(bArr.length, n); r++)
+          for (var c = 0; c < Math.min(bArr[r].length, n); c++)
+            bonds[r][c] = bArr[r][c] * 0.8; // slight decay between sessions
+      }
+    } catch (e) {}
+    initScentGrid();
+    // Restore nodes from localStorage
+    nodes = [];
+    try {
+      var savedN = localStorage.getItem(NODES_KEY);
+      if (savedN) {
+        var nArr = JSON.parse(savedN);
+        for (var ni4 = 0; ni4 < Math.min(nArr.length, NODE_CAP); ni4++) {
+          nodes.push({ x: nArr[ni4].x, y: nArr[ni4].y, age: 0,
+            maxAge: 2400, // shorter on reload — infrastructure decays
+            glyph: nArr[ni4].glyph, strength: nArr[ni4].strength * 0.7 });
+        }
+      }
+    } catch (e) {}
   }
+
+  // Save state to localStorage on page unload — collective memory persists
+  window.addEventListener("beforeunload", function () {
+    try {
+      if (scentGrid) {
+        // Downsample scent grid for storage (every 4th cell)
+        var sparse = [];
+        for (var i = 0; i < scentGrid.length; i += 4) sparse.push(Math.round(scentGrid[i] * 100) / 100);
+        // Pad back on load? No — save full but compressed
+        var full = [];
+        for (var j = 0; j < scentGrid.length; j++) full.push(Math.round(scentGrid[j] * 100) / 100);
+        if (full.length < 50000) localStorage.setItem(STORAGE_KEY, JSON.stringify(full));
+      }
+      if (bonds.length > 0) {
+        var bSave = [];
+        for (var r = 0; r < bonds.length; r++) {
+          bSave.push(Array.from(bonds[r]).map(function (v) { return Math.round(v * 100) / 100; }));
+        }
+        localStorage.setItem(BONDS_KEY, JSON.stringify(bSave));
+      }
+      // Save nodes — persistent infrastructure survives across sessions
+      if (nodes.length > 0) {
+        var nSave = nodes.map(function (n) {
+          return { x: Math.round(n.x), y: Math.round(n.y), glyph: n.glyph, strength: Math.round(n.strength * 100) / 100 };
+        });
+        localStorage.setItem(NODES_KEY, JSON.stringify(nSave));
+      }
+    } catch (e) {}
+  });
 
   function renderAll() {
     var w = header.clientWidth, h = header.clientHeight;
     var texts = getHeaderTexts();
-    [asciiCanvas, realCanvas, revealCanvas].forEach(function (c) { c.width = w * dpr; c.height = h * dpr; });
-    ascCtx.setTransform(dpr,0,0,dpr,0,0);
-    rlCtx.setTransform(dpr,0,0,dpr,0,0);
-    rvCtx.setTransform(dpr,0,0,dpr,0,0);
-    renderReal(w, h);
+    [asciiCanvas, revealCanvas].forEach(function (c) { c.width = w * dpr; c.height = h * dpr; });
+    ascCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    rvCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     buildGrid(w, h);
     renderBaseToOffscreen(w, h, texts);
-    renderTextOnCanvas(rlCtx, texts);
     for (var i = 0; i < texts.length; i++) texts[i].el.style.visibility = "hidden";
     initAnimObjects(w, h);
   }
 
-  function renderReal(w, h) {
-    var dim = coverDim(img.width, img.height, w, h, storedBgPos);
-    rlCtx.drawImage(img, dim.sx, dim.sy, dim.sw, dim.sh, 0, 0, w, h);
-    var c = getColors(), fH = 50;
-    var g = rlCtx.createLinearGradient(0, h - fH, 0, h);
-    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, c.bg);
-    rlCtx.fillStyle = g; rlCtx.fillRect(0, h - fH, w, fH);
-  }
-
   function buildGrid(w, h) {
-    var sp = 8;
-    gridSp = sp;
+    var sp = 8; gridSp = sp;
     var cols = Math.ceil(w / sp), rows = Math.ceil(h / sp);
     gridCols = cols; gridRows = rows;
-
     var off = document.createElement("canvas"); off.width = cols; off.height = rows;
     var oCtx = off.getContext("2d");
     var dim = coverDim(img.width, img.height, cols, rows, storedBgPos);
     oCtx.drawImage(img, dim.sx, dim.sy, dim.sw, dim.sh, 0, 0, cols, rows);
     var px = oCtx.getImageData(0, 0, cols, rows).data;
-
     lumGrid = new Float32Array(cols * rows);
     for (var i = 0; i < cols * rows; i++) {
       var i4 = i * 4;
-      lumGrid[i] = (0.299*px[i4] + 0.587*px[i4+1] + 0.114*px[i4+2]) / 255;
+      lumGrid[i] = (0.299 * px[i4] + 0.587 * px[i4 + 1] + 0.114 * px[i4 + 2]) / 255;
     }
-
     edgeGrid = new Float32Array(cols * rows);
     for (var row = 1; row < rows - 1; row++) {
       for (var col = 1; col < cols - 1; col++) {
         var idx = row * cols + col;
-        var eH = Math.abs(lumGrid[idx] - lumGrid[idx + 1]);
-        var eV = Math.abs(lumGrid[idx] - lumGrid[idx + cols]);
-        edgeGrid[idx] = Math.sqrt(eH * eH + eV * eV);
-      }
-    }
-
-    // Breathing cells: very sparse, along strong edges
-    cells = [];
-    for (var r2 = 0; r2 < rows; r2++) {
-      for (var c2 = 0; c2 < cols; c2++) {
-        var idx2 = r2 * cols + c2;
-        var edge = edgeGrid[idx2];
-        if (edge < 0.08) continue;
-        var seed = r2 * 1000 + c2;
-        if (srand(seed + 50) > 0.06) continue;
-        cells.push({
-          x: c2 * sp + sp * 0.5, y: r2 * sp + sp * 0.5,
-          dk: 1 - lumGrid[idx2], edge: edge,
-          phase: srand(seed + 60) * Math.PI * 2,
-          breathSpeed: 0.0003 + srand(seed + 70) * 0.0008,
-          cycleTimer: Math.floor(srand(seed + 80) * 300),
-          cycleInterval: 400 + Math.floor(srand(seed + 90) * 1200),
-          glyph: symbols[Math.floor(srand(seed + 3) * symbols.length)],
-          blue: srand(seed + 10) < 0.20
-        });
+        edgeGrid[idx] = Math.sqrt(Math.pow(lumGrid[idx] - lumGrid[idx + 1], 2) + Math.pow(lumGrid[idx] - lumGrid[idx + cols], 2));
       }
     }
   }
 
-  // ===== Render static base =====
   function renderBaseToOffscreen(w, h, texts) {
     baseCanvas = document.createElement("canvas");
-    baseCanvas.width = w * dpr;
-    baseCanvas.height = h * dpr;
+    baseCanvas.width = w * dpr; baseCanvas.height = h * dpr;
     var bCtx = baseCanvas.getContext("2d");
-    bCtx.setTransform(dpr,0,0,dpr,0,0);
+    bCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bCtx.fillStyle = "#0a0a0c"; bCtx.fillRect(0, 0, w, h);
 
-    bCtx.fillStyle = "#0a0a0c";
-    bCtx.fillRect(0, 0, w, h);
-
-    var sp = gridSp, cols = gridCols, rows = gridRows;
-
-    // === 1. SAM3-style segmentation mask outlines with ML labels ===
-    var bandCount = 6;
-    var bandColors = [
-      "50,90,160","70,140,120","100,70,150",
-      "130,110,70","70,130,90","90,80,140"
-    ];
-    bCtx.lineWidth = 0.7;
-    // Track where to place labels (at band boundaries)
-    var labelPositions = [];
-    for (var row = 1; row < rows - 1; row++) {
-      for (var col = 1; col < cols - 1; col++) {
-        var idx = row * cols + col;
-        var band = Math.min(bandCount - 1, Math.floor(lumGrid[idx] * bandCount));
-        var bandR = Math.min(bandCount - 1, Math.floor(lumGrid[idx + 1] * bandCount));
-        var bandB = Math.min(bandCount - 1, Math.floor(lumGrid[idx + cols] * bandCount));
-        var x = col * sp, y = row * sp;
-
-        if (band !== bandR) {
-          bCtx.strokeStyle = "rgba(" + bandColors[Math.min(band, bandR)] + ",0.05)";
-          bCtx.beginPath(); bCtx.moveTo(x + sp, y); bCtx.lineTo(x + sp, y + sp); bCtx.stroke();
-          if (srand(row * 997 + col) < 0.005) {
-            labelPositions.push({ x: x + sp + 3, y: y + sp * 0.5, band: Math.min(band, bandR) });
-          }
-        }
-        if (band !== bandB) {
-          bCtx.strokeStyle = "rgba(" + bandColors[Math.min(band, bandB)] + ",0.05)";
-          bCtx.beginPath(); bCtx.moveTo(x, y + sp); bCtx.lineTo(x + sp, y + sp); bCtx.stroke();
-          if (srand(row * 877 + col + 500) < 0.005) {
-            labelPositions.push({ x: x + sp * 0.5, y: y + sp + 8, band: Math.min(band, bandB) });
-          }
-        }
-      }
+    // Sparse starfield — faint dots for depth, no image
+    var starCount = Math.floor(w * h / pageConfig.starDensity);
+    for (var si = 0; si < starCount; si++) {
+      var sx = srand(si * 97 + 13) * w;
+      var sy = srand(si * 151 + 7) * h;
+      var sAlpha = 0.05 + srand(si * 53 + 31) * 0.12;
+      var sR = 0.3 + srand(si * 79 + 23) * 0.6;
+      // Color from palette — scattered mix
+      var sColorRoll = srand(si * 41 + 17);
+      var sColor = sColorRoll < 0.3 ? P.blue : sColorRoll < 0.55 ? P.green : sColorRoll < 0.75 ? P.amber : P.cool;
+      bCtx.fillStyle = "rgba(" + sColor + "," + sAlpha.toFixed(3) + ")";
+      bCtx.beginPath(); bCtx.arc(sx, sy, sR, 0, Math.PI * 2); bCtx.fill();
     }
 
-    // Draw ML labels at segmentation boundaries
-    bCtx.textAlign = "left"; bCtx.textBaseline = "middle";
-    bCtx.font = "6px monospace";
-    for (var li = 0; li < labelPositions.length; li++) {
-      var lp = labelPositions[li];
-      var label = mlLabels[Math.floor(srand(li * 137 + 7) * mlLabels.length)];
-      bCtx.fillStyle = "rgba(" + bandColors[lp.band] + ",0.40)";
-      bCtx.fillText(label, lp.x, lp.y);
-    }
-
-    // === 2. LiDAR horizontal scan lines (following image luminance) ===
-    var scanSpacing = Math.floor(rows / 25); // ~25 scan lines across height
-    if (scanSpacing < 3) scanSpacing = 3;
-    for (var scanRow = scanSpacing; scanRow < rows; scanRow += scanSpacing) {
-      bCtx.beginPath();
-      var started = false;
-      for (var sc = 0; sc < cols; sc++) {
-        var si = scanRow * cols + sc;
-        var dk = 1 - lumGrid[si];
-        if (dk < 0.08) {
-          if (started) { bCtx.stroke(); started = false; bCtx.beginPath(); }
-          continue;
-        }
-        var sx = sc * sp, sy = scanRow * sp;
-        // Slight vertical offset based on luminance (gives 3D depth feel)
-        var yOff = (dk - 0.5) * sp * 0.4;
-        if (!started) { bCtx.moveTo(sx, sy + yOff); started = true; }
-        else { bCtx.lineTo(sx, sy + yOff); }
-      }
-      if (started) {
-        bCtx.strokeStyle = "rgba(130,155,190,0.08)";
-        bCtx.lineWidth = 0.4;
-        bCtx.stroke();
-      }
-    }
-
-    // === 3. Edge contour lines (wireframe) ===
-    for (var row2 = 1; row2 < rows - 1; row2++) {
-      for (var col2 = 1; col2 < cols - 1; col2++) {
-        var idx2 = row2 * cols + col2;
-        var edge = edgeGrid[idx2];
-        if (edge < 0.07) continue;
-
-        var x2 = col2 * sp + sp * 0.5, y2 = row2 * sp + sp * 0.5;
-        var eH2 = Math.abs(lumGrid[idx2] - lumGrid[idx2 + 1]);
-        var eV2 = Math.abs(lumGrid[idx2] - lumGrid[idx2 + cols]);
-        var strength = Math.min(1, edge * 4);
-        var eAlpha = 0.04 + strength * 0.10;
-
-        bCtx.strokeStyle = "rgba(" + (strength > 0.5 ? "100,150,210" : "155,160,175") + "," + eAlpha.toFixed(3) + ")";
-        bCtx.lineWidth = 0.4 + strength * 0.7;
-        var len = sp * (0.4 + strength * 0.6);
-        bCtx.beginPath();
-        if (eH2 > eV2) { bCtx.moveTo(x2, y2 - len * 0.5); bCtx.lineTo(x2, y2 + len * 0.5); }
-        else { bCtx.moveTo(x2 - len * 0.5, y2); bCtx.lineTo(x2 + len * 0.5, y2); }
-        bCtx.stroke();
-      }
-    }
-
-    // === 4. Point cloud dots ===
-    for (var row3 = 0; row3 < rows; row3++) {
-      for (var col3 = 0; col3 < cols; col3++) {
-        var idx3 = row3 * cols + col3;
-        var dk3 = 1 - lumGrid[idx3];
-        var edge3 = edgeGrid[idx3];
-        var seed3 = row3 * 1000 + col3;
-        var dotChance;
-        if (edge3 > 0.06) dotChance = 0.12 + edge3 * 0.6;
-        else if (dk3 > 0.12) dotChance = dk3 * dk3 * 0.08;
-        else continue;
-        if (srand(seed3 + 30) > dotChance) continue;
-
-        var x3 = col3 * sp + sp * 0.5 + (srand(seed3 + 20) - 0.5) * sp * 0.6;
-        var y3 = row3 * sp + sp * 0.5 + (srand(seed3 + 21) - 0.5) * sp * 0.6;
-        var dotAlpha = edge3 > 0.06 ? 0.09 + edge3 * 0.20 : 0.035 + dk3 * 0.06;
-        var dotR = edge3 > 0.06 ? 0.6 + edge3 * 1.3 : 0.35 + dk3 * 0.5;
-
-        bCtx.fillStyle = "rgba(" + (edge3 > 0.12 ? "120,165,220" : "185,188,198") + "," + dotAlpha.toFixed(3) + ")";
-        bCtx.beginPath(); bCtx.arc(x3, y3, dotR, 0, Math.PI * 2); bCtx.fill();
-      }
-    }
-
-    // === 5. Math symbols — starry night density, image-following ===
-    // Tighter grid, most symbols faint like distant stars, some medium, few bright.
-    bCtx.textAlign = "center"; bCtx.textBaseline = "middle";
-    var symSp = sp * 3.5; // sparser grid (~28px) for night-sky feel
-    for (var sy4 = 0; sy4 < h; sy4 += symSp) {
-      for (var sx4 = 0; sx4 < w; sx4 += symSp) {
-        var gx4 = Math.floor((sx4 + symSp * 0.5) / sp);
-        var gy4 = Math.floor((sy4 + symSp * 0.5) / sp);
-        if (gx4 >= cols) gx4 = cols - 1;
-        if (gy4 >= rows) gy4 = rows - 1;
-        var idx4 = gy4 * cols + gx4;
-        var dk4 = 1 - lumGrid[idx4];
-        var edge4 = edgeGrid[idx4] || 0;
-
-        if (dk4 < 0.08 && edge4 < 0.03) continue;
-
-        var seed4 = gy4 * 1000 + gx4;
-        var rnd4 = srand(seed4);
-
-        // Strong image following: symbols concentrate where image has content
-        // Very sparse in light/sky areas, dense in dark/detailed areas
-        var fillChance = dk4 * dk4 * 0.50 + edge4 * 0.5 + 0.005;
-        if (rnd4 > fillChance) continue;
-
-        var x4 = sx4 + symSp * 0.5;
-        var y4 = sy4 + symSp * 0.5;
-
-        var charRnd = srand(seed4 + 3);
-        var glyph = dk4 < 0.08
-          ? lightDots[Math.floor(charRnd * lightDots.length)]
-          : symbols[Math.floor(charRnd * symbols.length)];
-
-        var isMeaningful = brightSet.has(glyph);
-        bCtx.font = (isMeaningful ? 9 + Math.floor(dk4 * 2) : 7 + Math.floor(dk4 * 2)) + "px monospace";
-
-        // Starry night alpha distribution:
-        // Most symbols: very faint (distant stars)
-        // ~15% medium (regular stars)
-        // ~5% meaningful ones: bright (brightest stars)
-        var starRoll = srand(seed4 + 77);
-        var alpha;
-        if (isMeaningful) {
-          // Research equations: bright, stand out like key stars
-          alpha = 0.15 + dk4 * 0.50;
-        } else if (starRoll < 0.08) {
-          // ~8% get a medium glow — secondary stars
-          alpha = 0.04 + dk4 * 0.18;
-        } else {
-          // Majority: faint distant texture
-          alpha = 0.008 + dk4 * dk4 * 0.10;
-        }
-
-        var cStr = srand(seed4 + 10) < 0.20 ? "130,175,230" : "195,200,215";
-        bCtx.fillStyle = "rgba(" + cStr + "," + alpha.toFixed(3) + ")";
-        bCtx.fillText(glyph, x4, y4);
-      }
-    }
-
-    // Header text
     renderTextOnCanvas(bCtx, texts);
 
-    // Bottom fade
     var c = getColors(), fH = 50;
-    var fg = bCtx.createLinearGradient(0, h-fH, 0, h);
+    var fg = bCtx.createLinearGradient(0, h - fH, 0, h);
     fg.addColorStop(0, "rgba(10,10,12,0)"); fg.addColorStop(1, c.bg);
-    bCtx.fillStyle = fg; bCtx.fillRect(0, h-fH, w, fH);
+    bCtx.fillStyle = fg; bCtx.fillRect(0, h - fH, w, fH);
   }
 
   function getLumAt(px, py) {
     if (!lumGrid) return 0.5;
     var gx = Math.floor(px / gridSp), gy = Math.floor(py / gridSp);
-    if (gx < 0 || gx >= gridCols || gy < 0 || gy >= gridRows) return 0.5;
-    return lumGrid[gy * gridCols + gx];
+    return (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) ? lumGrid[gy * gridCols + gx] : 0.5;
   }
 
-  // --- Main animation loop ---
+  // ===== Animation loop =====
   var frameCount = 0;
-  var cometTimer = 0;
-  var nextCometAt = 1; // first comet fires immediately on load
 
   function animate() {
     var w = header.clientWidth, h = header.clientHeight;
     frameCount++;
     initWander();
 
-    // --- Draw static base ---
-    ascCtx.setTransform(1,0,0,1,0,0);
+    // Base
+    ascCtx.setTransform(1, 0, 0, 1, 0, 0);
     ascCtx.drawImage(baseCanvas, 0, 0);
-    ascCtx.setTransform(dpr,0,0,dpr,0,0);
+    ascCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // --- Breathing wave overlay on static base ---
-    // Multiple overlapping slow sine waves create organic brightness variation
-    var breathPatch = 60; // patch size for breathing regions
-    for (var by = 0; by < h; by += breathPatch) {
-      for (var bx = 0; bx < w; bx += breathPatch) {
-        // 3 overlapping waves at different scales/speeds/angles
-        var wave1 = Math.sin(frameCount * 0.0002 + bx * 0.008 + by * 0.005) * 0.5 + 0.5;
-        var wave2 = Math.sin(frameCount * 0.0003 + bx * 0.003 - by * 0.007 + 1.5) * 0.5 + 0.5;
-        var wave3 = Math.sin(frameCount * 0.00015 - bx * 0.005 + by * 0.003 + 3.0) * 0.5 + 0.5;
-        var combined = (wave1 * 0.4 + wave2 * 0.35 + wave3 * 0.25); // 0-1
-        // Darken regions: overlay black with varying opacity
-        // When combined is low → darker, when high → brighter (less overlay)
-        var darkAmount = (1 - combined) * 0.10; // max 10% darkening — subtle
-        if (darkAmount > 0.01) {
-          ascCtx.fillStyle = "rgba(10,10,12," + darkAmount.toFixed(3) + ")";
-          ascCtx.fillRect(bx, by, breathPatch, breathPatch);
-        }
+    // Breathing
+    var bp = 60;
+    for (var by = 0; by < h; by += bp) {
+      for (var bx = 0; bx < w; bx += bp) {
+        var wv = Math.sin(frameCount * 0.0002 + bx * 0.008 + by * 0.005) * 0.5 + 0.5;
+        var wv2 = Math.sin(frameCount * 0.0003 + bx * 0.003 - by * 0.007 + 1.5) * 0.5 + 0.5;
+        var dk = (1 - (wv * 0.5 + wv2 * 0.5)) * 0.07;
+        if (dk > 0.01) { ascCtx.fillStyle = "rgba(10,10,12," + dk.toFixed(3) + ")"; ascCtx.fillRect(bx, by, bp, bp); }
       }
     }
 
     ascCtx.textAlign = "center"; ascCtx.textBaseline = "middle";
 
-    // --- 1. Breathing edge cells ---
-    if (cells) {
-      for (var ci = 0; ci < cells.length; ci++) {
-        var ce = cells[ci];
-        var breath = Math.sin(frameCount * ce.breathSpeed + ce.phase);
-        var a = (0.04 + ce.dk * 0.08 + ce.edge * 0.10) * (0.5 + breath * 0.5);
-        ce.cycleTimer++;
-        if (ce.cycleTimer >= ce.cycleInterval) {
-          ce.cycleTimer = 0;
-          ce.glyph = symbols[Math.floor(Math.random() * symbols.length)];
-        }
-        if (a < 0.01) continue;
-        ascCtx.font = "9px monospace";
-        ascCtx.fillStyle = "rgba(" + (ce.blue ? "130,175,230" : "195,200,215") + "," + a.toFixed(3) + ")";
-        ascCtx.fillText(ce.glyph, ce.x, ce.y);
-      }
+    if (frameCount % 3 === 0) decayScent();
+
+    // Hebbian decay — unused bonds weaken slowly
+    if (frameCount % 60 === 0) {
+      for (var hbi = 0; hbi < bonds.length; hbi++)
+        for (var hbj = 0; hbj < bonds[hbi].length; hbj++)
+          bonds[hbi][hbj] *= 0.995;
     }
 
-    // --- 2. Twinkling stars ---
-    for (var si = 0; si < stars.length; si++) {
-      var st = stars[si];
-      var twinkle = Math.sin(frameCount * st.speed + st.phase);
-      // Sharp twinkle: most of the time dim, occasionally bright
-      var intensity = twinkle * twinkle * twinkle; // cubic for sharp peaks
-      if (intensity < 0) intensity = 0;
-      var sa = st.peakAlpha * intensity;
-      if (sa < 0.01) continue;
+    // --- Cursor interaction: ripple, trace, scent, agent influence ---
+    if (cursorX >= 0) {
+      var cursorActive = isHovering || isTouching;
 
-      var sr = st.maxR * (0.3 + intensity * 0.7);
-      var sLum = getLumAt(st.x, st.y);
-      sa *= 0.3 + (1 - sLum) * 0.7;
+      // Deposit scent — shape the landscape
+      addScent(cursorX, cursorY, cursorActive ? 0.06 : 0.01);
 
-      ascCtx.fillStyle = "rgba(" + (st.blue ? "140,175,230" : "220,225,235") + "," + sa.toFixed(3) + ")";
-      ascCtx.beginPath(); ascCtx.arc(st.x, st.y, sr, 0, Math.PI * 2); ascCtx.fill();
-    }
-
-    // --- 3. Matrix drip columns ---
-    for (var di = matrixDrops.length - 1; di >= 0; di--) {
-      var d = matrixDrops[di];
-      d.y += d.speed;
-
-      d.cycleTimer++;
-      if (d.cycleTimer >= d.cycleInterval) {
-        d.cycleTimer = 0;
-        var rci = Math.floor(Math.random() * d.length);
-        d.chars[rci] = symbols[Math.floor(Math.random() * symbols.length)];
+      // Leave a fading dot trace behind cursor
+      if (frameCount % (cursorActive ? 8 : 20) === 0) {
+        marks.push({ type: "dot", x: cursorX, y: cursorY,
+          r: cursorActive ? 1.2 : 0.6,
+          color: P.amber, alpha: cursorActive ? 0.15 : 0.06,
+          age: 0, maxAge: 300 });
       }
 
-      ascCtx.font = d.fontSize + "px monospace";
-      for (var dj = 0; dj < d.length; dj++) {
-        var dy = d.y - dj * d.charSpacing;
-        if (dy < -20 || dy > h + 20) continue;
-
-        var tailFade = 1 - dj / d.length;
-        tailFade = tailFade * tailFade;
-        var lum = getLumAt(d.x, dy);
-        var imgMod = 0.3 + (1 - lum) * 0.7;
-        var da = tailFade * imgMod * d.alpha;
-        if (dj === 0) da = Math.min(da * 2.5, 0.65);
-        if (da < 0.005) continue;
-
-        var dcr = d.blue ? 110 : 180, dcg = d.blue ? 165 : 188, dcb = d.blue ? 225 : 210;
-        if (dj === 0) { dcr = Math.min(255, dcr + 60); dcg = Math.min(255, dcg + 60); dcb = Math.min(255, dcb + 45); }
-
-        ascCtx.fillStyle = "rgba(" + dcr + "," + dcg + "," + dcb + "," + da.toFixed(3) + ")";
-        ascCtx.fillText(d.chars[dj], d.x, dy);
-      }
-
-      if (d.y - d.length * d.charSpacing > h + 30) {
-        matrixDrops[di] = createMatrixDrop(w, h);
-      }
-    }
-
-    // --- 4. Cosmic drifters ---
-    for (var fi = drifters.length - 1; fi >= 0; fi--) {
-      var f = drifters[fi];
-      f.x += f.vx; f.y += f.vy; f.age++;
-
-      var fBreath = Math.sin(frameCount * f.breathSpeed + f.phase);
-      var fa = f.alpha * (0.5 + fBreath * 0.5);
-      if (f.age < 60) fa *= f.age / 60;
-      else if (f.age > f.maxAge - 120) fa *= (f.maxAge - f.age) / 120;
-      fa *= 0.3 + (1 - getLumAt(f.x, f.y)) * 0.7;
-
-      if (fa > 0.005 && f.x > -20 && f.x < w + 20 && f.y > -20 && f.y < h + 20) {
-        ascCtx.font = f.fontSize + "px monospace";
-        ascCtx.fillStyle = "rgba(" + (f.blue ? "130,175,230" : "195,200,215") + "," + fa.toFixed(3) + ")";
-        ascCtx.fillText(f.glyph, f.x, f.y);
-      }
-
-      if (f.age > f.maxAge || f.x < -40 || f.x > w + 40 || f.y < -40 || f.y > h + 40) {
-        drifters[fi] = createDrifter(w, h);
-      }
-    }
-
-    // --- 5. Rare comets with sparks ---
-    cometTimer++;
-    if (cometTimer >= nextCometAt) {
-      cometTimer = 0;
-      nextCometAt = 300 + Math.floor(Math.random() * 500); // 5-13 sec
-      comets.push(createComet(w, h));
-    }
-
-    for (var ki = comets.length - 1; ki >= 0; ki--) {
-      var k = comets[ki];
-      k.x += k.vx; k.y += k.vy; k.age++;
-
-      k.cycleTimer++;
-      if (k.cycleTimer >= k.cycleInterval) {
-        k.cycleTimer = 0;
-        var kri = Math.floor(Math.random() * k.length);
-        k.chars[kri] = symbols[Math.floor(Math.random() * symbols.length)];
-      }
-
-      // Spawn sparks from head and along tail
-      k.sparkTimer++;
-      if (k.sparkTimer >= k.sparkInterval && k.age > 10) {
-        k.sparkTimer = 0;
-        // 1-3 sparks per burst
-        var sparkCount = 1 + Math.floor(Math.random() * 3);
-        for (var spi = 0; spi < sparkCount; spi++) {
-          // Sparks from head and random tail positions
-          var sparkIdx = Math.floor(Math.random() * Math.min(5, k.length));
-          var kvmag2 = Math.sqrt(k.vx * k.vx + k.vy * k.vy);
-          var ktdx2 = -k.vx / kvmag2, ktdy2 = -k.vy / kvmag2;
-          var spx = k.x + ktdx2 * sparkIdx * k.charSpacing;
-          var spy = k.y + ktdy2 * sparkIdx * k.charSpacing;
-          sparks.push(createSpark(spx, spy, k.vx, k.vy));
+      // Ripple: single delicate ring, infrequent
+      if (cursorActive && frameCount % 45 === 0) {
+        var ringR2 = 25 + Math.random() * 15;
+        for (var rpi = 0; rpi < 8; rpi++) {
+          var rpA = (rpi / 8) * Math.PI * 2 + Math.random() * 0.3;
+          marks.push({ type: "dot",
+            x: cursorX + Math.cos(rpA) * ringR2,
+            y: cursorY + Math.sin(rpA) * ringR2,
+            r: 0.8, color: P.amber, alpha: 0.15,
+            age: 0, maxAge: 200 });
         }
       }
 
-      if (k.age > k.maxAge || k.x < -200 || k.x > w + 200 || k.y < -200 || k.y > h + 200) {
-        comets.splice(ki, 1); continue;
+      // Push nearby agents — cursor creates a gentle force field
+      for (var cai = 0; cai < agents.length; cai++) {
+        var ca = agents[cai];
+        if (ca.dead) continue;
+        var caDist = Math.hypot(ca.x - cursorX, ca.y - cursorY);
+        if (caDist < 100 && caDist > 5) {
+          var pushStrength = cursorActive ? 0.03 : 0.008;
+          var pushAngle = Math.atan2(ca.y - cursorY, ca.x - cursorX);
+          var push = (1 - caDist / 100) * pushStrength;
+          ca.theta += (pushAngle - ca.theta) * push;
+          // Near cursor → agents enter SENSE state (they notice you)
+          if (caDist < 50) ca.state = S_SENSE;
+        }
       }
 
-      var kLifeFade = 1;
-      if (k.age < 20) kLifeFade = k.age / 20;
-      else if (k.age > k.maxAge - 80) kLifeFade = (k.maxAge - k.age) / 80;
-
-      ascCtx.font = k.fontSize + "px monospace";
-      var kvmag = Math.sqrt(k.vx * k.vx + k.vy * k.vy);
-      var ktdx = -k.vx / kvmag, ktdy = -k.vy / kvmag;
-
-      for (var kj = 0; kj < k.length; kj++) {
-        var kx = k.x + ktdx * kj * k.charSpacing;
-        var ky = k.y + ktdy * kj * k.charSpacing;
-        if (kx < -40 || kx > w + 40 || ky < -40 || ky > h + 40) continue;
-
-        var kTailFade = 1 - kj / k.length;
-        // Quartic fade for very long gradual tail
-        kTailFade = kTailFade * kTailFade;
-        // Extra-long tail: first 3 chars bright, then gradual fade
-        if (kj < 3) kTailFade = 1 - kj * 0.15;
-
-        var kLum = getLumAt(kx, ky);
-        var kImgMod = 0.5 + (1 - kLum) * 0.5;
-        var ka = kTailFade * kLifeFade * kImgMod;
-
-        if (kj === 0) ka *= 0.90;
-        else if (kj < 3) ka *= 0.60;
-        else if (kj < 6) ka *= 0.35;
-        else ka *= 0.20;
-
-        if (ka < 0.005) continue;
-
-        // Color: bright white head → blue → deep blue tail
-        var kcr, kcg, kcb;
-        if (kj === 0) { kcr = 240; kcg = 245; kcb = 255; }
-        else if (kj < 3) { kcr = 200; kcg = 215; kcb = 240; }
-        else if (kj < 6) { kcr = 140; kcg = 175; kcb = 220; }
-        else if (kj < 10) { kcr = 110; kcg = 145; kcb = 205; }
-        else { kcr = 80; kcg = 115; kcb = 185; }
-
-        // Tail chars get smaller font
-        if (kj > 8) ascCtx.font = (k.fontSize - 1) + "px monospace";
-        else ascCtx.font = k.fontSize + "px monospace";
-
-        ascCtx.fillStyle = "rgba(" + kcr + "," + kcg + "," + kcb + "," + ka.toFixed(3) + ")";
-        ascCtx.fillText(k.chars[kj], kx, ky);
+      // Occasionally deposit a word near cursor — your presence leaves meaning
+      if (cursorActive && frameCount % 120 === 0) {
+        var cursorWords = ["here","look","notice","presence","you","now","this"];
+        trails.push({
+          x: cursorX + (Math.random() - 0.5) * 20,
+          y: cursorY + (Math.random() - 0.5) * 20,
+          glyph: cursorWords[Math.floor(Math.random() * cursorWords.length)],
+          fontSize: 7, color: P.warm,
+          baseAlpha: 0.30, age: 0, maxAge: TRAIL_AGE * 0.5
+        });
       }
     }
 
-    // --- 6. Render sparks ---
-    for (var ski = sparks.length - 1; ski >= 0; ski--) {
-      var sp = sparks[ski];
-      sp.x += sp.vx; sp.y += sp.vy; sp.age++;
-      sp.vx *= 0.97; sp.vy *= 0.97; // drag
-
-      if (sp.age > sp.maxAge) { sparks.splice(ski, 1); continue; }
-
-      var spLife = 1 - sp.age / sp.maxAge;
-      var spAlpha = spLife * spLife * 0.6;
-      var spR = sp.r * spLife;
-      if (spAlpha < 0.01 || spR < 0.1) continue;
-
-      // Sparks are bright white-blue
-      ascCtx.fillStyle = "rgba(200,215,240," + spAlpha.toFixed(3) + ")";
-      ascCtx.beginPath(); ascCtx.arc(sp.x, sp.y, spR, 0, Math.PI * 2); ascCtx.fill();
+    // 0. Structural marks — dots and lines agents have drawn
+    for (var mi = marks.length - 1; mi >= 0; mi--) {
+      var mk = marks[mi]; mk.age++;
+      if (mk.age > mk.maxAge) { marks.splice(mi, 1); continue; }
+      var mFade = 1 - mk.age / mk.maxAge; mFade = mFade * mFade;
+      var mA = mk.alpha * mFade;
+      if (mA < 0.003) continue;
+      if (mk.type === "dot") {
+        ascCtx.fillStyle = "rgba(" + mk.color + "," + mA.toFixed(3) + ")";
+        ascCtx.beginPath(); ascCtx.arc(mk.x, mk.y, mk.r, 0, Math.PI * 2); ascCtx.fill();
+      } else if (mk.type === "line") {
+        ascCtx.strokeStyle = "rgba(" + mk.color + "," + mA.toFixed(3) + ")";
+        ascCtx.lineWidth = 0.8;
+        ascCtx.beginPath(); ascCtx.moveTo(mk.x1, mk.y1); ascCtx.lineTo(mk.x2, mk.y2); ascCtx.stroke();
+      }
     }
+    if (marks.length > MARK_CAP) marks.splice(0, marks.length - MARK_CAP);
 
-    // Cap sparks array
-    if (sparks.length > 200) sparks.splice(0, sparks.length - 200);
-
-    // --- 7. Straight-down rain ---
-    for (var ri = rainDrops.length - 1; ri >= 0; ri--) {
-      var rd = rainDrops[ri];
-      rd.y += rd.speed;
-      if (rd.y > h + 20) { rainDrops[ri] = createRainDrop(w, h); continue; }
-
-      var rLum = getLumAt(rd.x, rd.y);
-      var ra = rd.alpha * (0.3 + (1 - rLum) * 0.7);
-      if (ra < 0.005) continue;
-
-      ascCtx.font = rd.fontSize + "px monospace";
-      ascCtx.fillStyle = "rgba(" + (rd.blue ? "120,170,225" : "185,190,205") + "," + ra.toFixed(3) + ")";
-      ascCtx.fillText(rd.glyph, rd.x, rd.y);
+    // 1. Trails (text)
+    for (var ti = trails.length - 1; ti >= 0; ti--) {
+      var tr = trails[ti]; tr.age++;
+      if (tr.age > tr.maxAge) { trails.splice(ti, 1); continue; }
+      var tF = 1 - tr.age / tr.maxAge; tF = tF * tF;
+      var tA = tr.baseAlpha * tF * (0.3 + (1 - getLumAt(tr.x, tr.y)) * 0.7);
+      if (tA < 0.005) continue;
+      ascCtx.font = tr.fontSize + "px monospace";
+      ascCtx.fillStyle = "rgba(" + tr.color + "," + tA.toFixed(3) + ")";
+      ascCtx.fillText(tr.glyph, tr.x, tr.y);
     }
+    if (trails.length > TRAIL_CAP) trails.splice(0, trails.length - TRAIL_CAP);
 
-    // Spawn new rain occasionally
-    if (frameCount % 14 === 0 && rainDrops.length < Math.floor(w / 90)) {
-      rainDrops.push(createRainDrop(w, h));
-    }
-
-    // --- 8. Supernova explosions (rare) ---
-    if (frameCount % 2400 === 0) {
-      // ~every 40 sec
-      if (supernovae.length < 1) supernovae.push(createSupernova(w, h));
-    }
-
-    for (var sni = supernovae.length - 1; sni >= 0; sni--) {
-      var sn = supernovae[sni];
-      sn.age++;
-      if (sn.age > sn.maxAge) { supernovae.splice(sni, 1); continue; }
-
-      var snLife = sn.age / sn.maxAge;
-      // Fade: bright burst then slow fade
-      var snAlpha = snLife < 0.1 ? snLife / 0.1 : Math.max(0, 1 - (snLife - 0.1) / 0.9);
-      snAlpha = snAlpha * snAlpha * 0.5;
-
-      ascCtx.font = "8px monospace";
-      for (var spi2 = 0; spi2 < sn.particles.length; spi2++) {
-        var snp = sn.particles[spi2];
-        snp.x += snp.vx; snp.y += snp.vy;
-        snp.vx *= snp.drag; snp.vy *= snp.drag;
-
-        if (snp.x < -20 || snp.x > w + 20 || snp.y < -20 || snp.y > h + 20) continue;
-
-        var snpLum = getLumAt(snp.x, snp.y);
-        var snpA = snAlpha * (0.3 + (1 - snpLum) * 0.7);
-        if (snpA < 0.005) continue;
-
-        // Color: white center → blue outer
-        var dist = Math.sqrt((snp.x - sn.cx) * (snp.x - sn.cx) + (snp.y - sn.cy) * (snp.y - sn.cy));
-        var snr, sng, snb;
-        if (dist < 30) { snr = 220; sng = 225; snb = 240; }
-        else if (dist < 80) { snr = 150; sng = 180; snb = 225; }
-        else { snr = 100; sng = 140; snb = 205; }
-
-        ascCtx.fillStyle = "rgba(" + snr + "," + sng + "," + snb + "," + snpA.toFixed(3) + ")";
-        ascCtx.fillText(snp.glyph, snp.x, snp.y);
+    // 1b. Emergent crystallization — trail deposits connect into visible geometry
+    if (frameCount % 6 === 0) { // less frequent
+      ascCtx.lineWidth = 0.5;
+      var alive = [];
+      for (var ai2 = 0; ai2 < trails.length; ai2++) {
+        var t2 = trails[ai2];
+        if (t2.age < t2.maxAge * 0.6) alive.push(t2);
+      }
+      var maxConn = 30; // much fewer connections
+      var connCount = 0;
+      for (var ci2 = 0; ci2 < alive.length && connCount < maxConn; ci2++) {
+        var ta = alive[ci2];
+        var taFade = 1 - ta.age / ta.maxAge; taFade *= taFade;
+        var neighbors = 0;
+        for (var cj2 = ci2 + 1; cj2 < alive.length && connCount < maxConn; cj2++) {
+          var tb = alive[cj2];
+          var cd = Math.hypot(tb.x - ta.x, tb.y - ta.y);
+          if (cd > 20 && cd < 60 && neighbors < 2) { // wider spacing, fewer per node
+            var tbFade = 1 - tb.age / tb.maxAge; tbFade *= tbFade;
+            var lineA = Math.min(taFade, tbFade) * 0.08;
+            if (lineA < 0.005) continue;
+            var lineColor = ta.age > tb.age ? ta.color : tb.color;
+            ascCtx.strokeStyle = "rgba(" + lineColor + "," + lineA.toFixed(4) + ")";
+            ascCtx.beginPath();
+            ascCtx.moveTo(ta.x, ta.y);
+            ascCtx.lineTo(tb.x, tb.y);
+            ascCtx.stroke();
+            connCount++;
+            neighbors++;
+          }
+        }
       }
     }
 
-    // --- 9. Dynamic bright stars ---
-    for (var bsi = brightStars.length - 1; bsi >= 0; bsi--) {
-      var bs = brightStars[bsi];
-      bs.age++;
-      bs.cycleTimer++;
-      if (bs.cycleTimer >= bs.cycleInterval) {
-        bs.cycleTimer = 0;
-        bs.glyph = symbols[Math.floor(Math.random() * symbols.length)];
-      }
+    // 2. Update agents
+    for (var ai = 0; ai < agents.length; ai++) updateAgent(agents[ai], w, h, frameCount);
 
-      if (bs.age > bs.maxAge) {
-        brightStars[bsi] = createBrightStar(w, h);
-        continue;
+    // 3. Social overlaps
+    for (var ci = 0; ci < agents.length; ci++) {
+      for (var cj = ci + 1; cj < agents.length; cj++) {
+        if (agents[ci].dead || agents[cj].dead) continue;
+        var cdist = Math.hypot(agents[cj].x - agents[ci].x, agents[cj].y - agents[ci].y);
+        if (cdist < INTERACT_R) {
+          var mx = (agents[ci].x + agents[cj].x) / 2, my = (agents[ci].y + agents[cj].y) / 2;
+          var overlap = (1 - cdist / INTERACT_R);
+          var lA = overlap * 0.04;
+          // Dotted connection
+          ascCtx.strokeStyle = "rgba(" + P.green + "," + lA.toFixed(4) + ")";
+          ascCtx.lineWidth = 0.5; ascCtx.setLineDash([2, 6]);
+          ascCtx.beginPath(); ascCtx.moveTo(agents[ci].x, agents[ci].y);
+          ascCtx.lineTo(agents[cj].x, agents[cj].y); ascCtx.stroke();
+          ascCtx.setLineDash([]);
+          // Social glyph at midpoint
+          if (cdist < PULSE_R && frameCount % 12 === 0) {
+            var sg = socialV[Math.floor(Math.random() * socialV.length)];
+            var sA = overlap * 0.45 * (0.4 + (1 - getLumAt(mx, my)) * 0.6);
+            ascCtx.font = "8px monospace";
+            ascCtx.fillStyle = "rgba(" + P.warm + "," + sA.toFixed(3) + ")";
+            ascCtx.fillText(sg, mx + (Math.random() - 0.5) * 16, my + (Math.random() - 0.5) * 16);
+          }
+          // Node building: sustained cooperation creates a persistent landmark
+          if (cdist < PULSE_R && agents[ci].pulseTimer > 20 && agents[cj].pulseTimer > 20
+              && nodes.length < NODE_CAP && Math.random() < 0.002) {
+            // Check no existing node nearby
+            var tooClose = false;
+            for (var ni2 = 0; ni2 < nodes.length; ni2++) {
+              if (Math.hypot(nodes[ni2].x - mx, nodes[ni2].y - my) < 60) { tooClose = true; break; }
+            }
+            if (!tooClose) {
+              nodes.push({ x: mx, y: my, age: 0, maxAge: 3600, // ~60 sec
+                glyph: socialV[Math.floor(Math.random() * socialV.length)],
+                strength: 0.3 });
+              addScent(mx, my, 0.5); // strong scent beacon
+            }
+          }
+        }
       }
-
-      // Intensity: sharp rise to peak, slow fade
-      var bsT = bs.age / bs.maxAge;
-      var bsPeak = bs.peakAt / bs.maxAge;
-      var bsIntensity;
-      if (bsT < bsPeak) {
-        bsIntensity = bsT / bsPeak; // rise
-      } else {
-        bsIntensity = 1 - (bsT - bsPeak) / (1 - bsPeak); // fade
-      }
-      bsIntensity = bsIntensity * bsIntensity; // quadratic for sharper pulse
-
-      var bsLum = getLumAt(bs.x, bs.y);
-      var bsA = bsIntensity * 0.70 * (0.4 + (1 - bsLum) * 0.6);
-      if (bsA < 0.01) continue;
-
-      ascCtx.font = bs.fontSize + "px monospace";
-      var bsR = bs.blue ? 140 : 210, bsG = bs.blue ? 180 : 215, bsB = bs.blue ? 235 : 230;
-      // At peak, glow even brighter
-      if (bsIntensity > 0.7) {
-        bsR = Math.min(255, bsR + 40); bsG = Math.min(255, bsG + 35); bsB = Math.min(255, bsB + 25);
-      }
-      ascCtx.fillStyle = "rgba(" + bsR + "," + bsG + "," + bsB + "," + bsA.toFixed(3) + ")";
-      ascCtx.fillText(bs.glyph, bs.x, bs.y);
     }
 
-    // --- Header text on top ---
-    var texts = getHeaderTexts();
-    renderTextOnCanvas(ascCtx, texts);
+    // 4. Render + update persistent nodes (built infrastructure)
+    for (var ndi = nodes.length - 1; ndi >= 0; ndi--) {
+      var nd = nodes[ndi]; nd.age++;
+      if (nd.age > nd.maxAge) { nodes.splice(ndi, 1); continue; }
+      var nFade = nd.age < 60 ? nd.age / 60 : (nd.age > nd.maxAge - 120 ? (nd.maxAge - nd.age) / 120 : 1);
+      var nA = nd.strength * 1.5 * nFade * (0.4 + (1 - getLumAt(nd.x, nd.y)) * 0.6);
+      // Pulsing glow
+      var nPulse = 0.7 + 0.3 * Math.sin(frameCount * 0.015 + nd.x * 0.1);
+      nA *= nPulse;
+      if (nA < 0.005) continue;
+      // Soft glow circle
+      ascCtx.fillStyle = "rgba(" + P.warm + "," + (nA * 0.15).toFixed(3) + ")";
+      ascCtx.beginPath(); ascCtx.arc(nd.x, nd.y, 12, 0, Math.PI * 2); ascCtx.fill();
+      // Node label
+      ascCtx.font = "7px monospace";
+      ascCtx.fillStyle = "rgba(" + P.warm + "," + nA.toFixed(3) + ")";
+      ascCtx.fillText(nd.glyph, nd.x, nd.y);
+      // Nodes continuously emit scent — attracting agents
+      if (frameCount % 10 === 0) addScent(nd.x, nd.y, 0.03);
+    }
+    // Network lines between nearby nodes — visible infrastructure
+    ascCtx.lineWidth = 0.5;
+    for (var nli = 0; nli < nodes.length; nli++) {
+      for (var nlj = nli + 1; nlj < nodes.length; nlj++) {
+        var nlDist = Math.hypot(nodes[nlj].x - nodes[nli].x, nodes[nlj].y - nodes[nli].y);
+        if (nlDist < 200) {
+          var nlA = (1 - nlDist / 200) * 0.10 *
+            Math.min(nodes[nli].strength, nodes[nlj].strength);
+          ascCtx.strokeStyle = "rgba(" + P.warm + "," + nlA.toFixed(4) + ")";
+          ascCtx.setLineDash([3, 8]);
+          ascCtx.beginPath();
+          ascCtx.moveTo(nodes[nli].x, nodes[nli].y);
+          ascCtx.lineTo(nodes[nlj].x, nodes[nlj].y);
+          ascCtx.stroke();
+          ascCtx.setLineDash([]);
+        }
+      }
+    }
 
-    // Bottom fade
+    // 5. Draw agents
+    for (var ri = 0; ri < agents.length; ri++) drawAgent(ascCtx, agents[ri], frameCount);
+
+    // Header text + bottom fade
+    renderTextOnCanvas(ascCtx, getHeaderTexts());
     var colors = getColors(), fH = 50;
-    var fg = ascCtx.createLinearGradient(0, h-fH, 0, h);
-    fg.addColorStop(0, "rgba(10,10,12,0)"); fg.addColorStop(1, colors.bg);
-    ascCtx.fillStyle = fg; ascCtx.fillRect(0, h-fH, w, fH);
+    var fg2 = ascCtx.createLinearGradient(0, h - fH, 0, h);
+    fg2.addColorStop(0, "rgba(10,10,12,0)"); fg2.addColorStop(1, colors.bg);
+    ascCtx.fillStyle = fg2; ascCtx.fillRect(0, h - fH, w, fH);
 
-    // --- Reveal animation ---
+    // 5. Reveal: cursor unveils the solarpunk reality beneath
     rvCtx.clearRect(0, 0, w, h);
-    var src = realCanvas;
     var interacting = isHovering || isTouching;
     if (touchFadeTimer > 0) touchFadeTimer--;
 
@@ -1192,65 +1265,29 @@
     if (Math.hypot(wanderX - wanderTargetX, wanderY - wanderTargetY) < 20) pickWanderTarget();
 
     var activeX, activeY, activeEase;
-    if (interacting && mouseX >= 0) { activeX = mouseX; activeY = mouseY; activeEase = isHovering ? 0.04 : 0.06; }
+    if (interacting && mouseX >= 0) { activeX = mouseX; activeY = mouseY; activeEase = 0.04; }
     else if (touchFadeTimer > 0 && mouseX >= 0) {
       var blend = touchFadeTimer / 120;
       activeX = wanderX + (mouseX - wanderX) * blend;
       activeY = wanderY + (mouseY - wanderY) * blend; activeEase = 0.03;
-    } else { activeX = wanderX; activeY = wanderY; activeEase = 0.02; }
+    } else { activeX = wanderX; activeY = wanderY; activeEase = 0.015; }
 
     if (cursorX < 0) { cursorX = activeX; cursorY = activeY; }
     cursorX += (activeX - cursorX) * activeEase;
     cursorY += (activeY - cursorY) * activeEase;
+    if (interacting && mouseX >= 0) { wanderX += (mouseX - wanderX) * 0.02; wanderY += (mouseY - wanderY) * 0.02; }
 
-    if (interacting && mouseX >= 0) {
-      wanderX += (mouseX - wanderX) * 0.02;
-      wanderY += (mouseY - wanderY) * 0.02;
-    }
-
-    var targetAlpha = interacting ? 1 : 0.55;
+    var targetAlpha = interacting ? 0.12 : 0.05;
     revealAlpha += (targetAlpha - revealAlpha) * 0.03;
 
-    if (!trail.length || Math.hypot(cursorX - trail[trail.length-1].x, cursorY - trail[trail.length-1].y) > 2) {
-      trail.push({ x: cursorX, y: cursorY, age: 0 });
-    }
-    if (trail.length > 60) trail.shift();
-
-    if (revealAlpha > 0.005) {
-      for (var tli = trail.length - 1; tli >= 0; tli--) {
-        trail[tli].age++;
-        if (trail[tli].age > 80) { trail.splice(tli, 1); continue; }
-        var tp = trail[tli];
-        var life = 1 - tp.age / 80;
-        var tr = revealR * (0.1 + life * 0.3);
-        var tAlpha = life * life * 0.25 * revealAlpha;
-        rvCtx.save();
-        rvCtx.beginPath(); rvCtx.arc(tp.x, tp.y, tr, 0, Math.PI * 2); rvCtx.closePath(); rvCtx.clip();
-        rvCtx.globalAlpha = tAlpha;
-        rvCtx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
-        rvCtx.globalCompositeOperation = "destination-in";
-        var tg = rvCtx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, tr);
-        tg.addColorStop(0, "rgba(0,0,0," + tAlpha + ")");
-        tg.addColorStop(0.6, "rgba(0,0,0," + (tAlpha * 0.3) + ")");
-        tg.addColorStop(1, "rgba(0,0,0,0)");
-        rvCtx.fillStyle = tg;
-        rvCtx.fillRect(tp.x - tr, tp.y - tr, tr * 2, tr * 2);
-        rvCtx.globalCompositeOperation = "source-over"; rvCtx.globalAlpha = 1; rvCtx.restore();
-      }
-
-      if (cursorX >= 0) {
-        rvCtx.save();
-        rvCtx.beginPath(); rvCtx.arc(cursorX, cursorY, revealR, 0, Math.PI * 2); rvCtx.closePath(); rvCtx.clip();
-        rvCtx.globalAlpha = revealAlpha * 0.9;
-        rvCtx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
-        rvCtx.globalCompositeOperation = "destination-in";
-        var mg = rvCtx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, revealR);
-        mg.addColorStop(0, "rgba(0,0,0,1)"); mg.addColorStop(0.4, "rgba(0,0,0,0.7)");
-        mg.addColorStop(0.7, "rgba(0,0,0,0.2)"); mg.addColorStop(1, "rgba(0,0,0,0)");
-        rvCtx.fillStyle = mg;
-        rvCtx.fillRect(cursorX - revealR, cursorY - revealR, revealR * 2, revealR * 2);
-        rvCtx.globalCompositeOperation = "source-over"; rvCtx.globalAlpha = 1; rvCtx.restore();
-      }
+    if (revealAlpha > 0.003 && cursorX >= 0) {
+      var glowR = revealR;
+      var gg = rvCtx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, glowR);
+      gg.addColorStop(0, "rgba(" + P.amber + "," + (revealAlpha * 0.5).toFixed(3) + ")");
+      gg.addColorStop(0.3, "rgba(" + P.green + "," + (revealAlpha * 0.2).toFixed(3) + ")");
+      gg.addColorStop(1, "rgba(" + P.blue + ",0)");
+      rvCtx.fillStyle = gg;
+      rvCtx.fillRect(cursorX - glowR, cursorY - glowR, glowR * 2, glowR * 2);
     }
 
     requestAnimationFrame(animate);
