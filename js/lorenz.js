@@ -100,9 +100,10 @@
   var AGENT_N = 5;
   var TRAIL_CAP = 250;
   var TRAIL_AGE = 900; // ~15 sec
-  var INTERACT_R = 80;
-  var PULSE_R = 40;
+  var INTERACT_R = 120;
+  var PULSE_R = 60;
   var S_SENSE = 0, S_THINK = 1, S_ACT = 2;
+  var S_GREET = 3, S_DEBATE = 4, S_TEACH = 5; // social states
 
   // Hebbian bond matrix: bonds[i][j] = strength (0-1). Higher → easier coordination.
   var bonds = [];
@@ -236,8 +237,17 @@
       var score = dark * dark + (avoidScent ? -scent * 3 : scent * 2) + nodeBonus * 2;
       if (score > bestScore) { bestScore = score; bestX = tx; bestY = ty; }
     }
+    // 40% chance: target another agent instead of a location (seek social contact)
+    if (!avoidScent && Math.random() < 0.4 && agents.length > 1) {
+      var others = agents.filter(function (a) { return a !== agent && !a.dead; });
+      if (others.length > 0) {
+        var target = others[Math.floor(Math.random() * others.length)];
+        bestX = target.x + (Math.random() - 0.5) * 50;
+        bestY = target.y + (Math.random() - 0.5) * 50;
+      }
+    }
     agent.targetX = bestX; agent.targetY = bestY;
-    agent.waypointInterval = 300 + Math.floor(Math.random() * 300);
+    agent.waypointInterval = 200 + Math.floor(Math.random() * 250); // shorter intervals = more social seeking
     agent.waypointTimer = 0;
   }
 
@@ -264,6 +274,15 @@
     agent.stateTimer++;
     if (agent.reflecting) {
       agent.state = S_THINK;
+    } else if (agent.coordinated && nearCount >= 2) {
+      // Teaching: coordinated + multiple nearby = sharing knowledge
+      agent.state = S_TEACH;
+    } else if (agent.pulseTimer > 40 && nearCount >= 1) {
+      // Debating: deep in social pulse with someone nearby
+      agent.state = S_DEBATE;
+    } else if (nearAgent && nearDist < PULSE_R) {
+      // Greeting: close encounter
+      agent.state = S_GREET;
     } else if (nearAgent && nearDist < INTERACT_R * 0.7) {
       agent.state = S_SENSE;
     } else {
@@ -271,7 +290,7 @@
       if (turnAmount > 0.012) { agent.state = S_THINK; agent.stateTimer = 0; }
       else if (agent.stateTimer > 20) { agent.state = S_ACT; }
     }
-    agent.glyphCycle = Math.floor(fc * 0.0012) % 4; // ~14 sec per glyph
+    agent.glyphCycle = Math.floor(fc * 0.0012) % 4;
 
     // --- Steer ---
     var dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
@@ -297,13 +316,14 @@
       var dist = Math.sqrt(adx * adx + ady * ady);
       if (dist < INTERACT_R && dist > 0) {
         var away = Math.atan2(-ady, -adx);
-        var deflect = (INTERACT_R - dist) / INTERACT_R * 0.018;
+        // Gentle deflection — weaker so agents linger near each other
+        var deflect = (INTERACT_R - dist) / INTERACT_R * 0.008;
         var td = away - agent.theta;
         while (td > Math.PI) td -= Math.PI * 2;
         while (td < -Math.PI) td += Math.PI * 2;
         agent.theta += td * deflect;
         if (dist < PULSE_R) {
-          agent.pulseTimer = 40;
+          agent.pulseTimer = 80; // longer social engagement
           // Hebbian: strengthen bond between cooperating agents
           var ai2 = agents.indexOf(agent), aj2 = agents.indexOf(o);
           if (ai2 >= 0 && aj2 >= 0 && bonds[ai2]) {
@@ -321,9 +341,9 @@
     if (ai3 >= 0 && bonds[ai3]) {
       for (var bi = 0; bi < bonds[ai3].length; bi++) bondBoost += (bonds[ai3][bi] || 0);
     }
-    var flockThreshold = Math.max(0.3, 0.6 - bondBoost * 0.15); // strong bonds → easier coordination
+    var flockThreshold = Math.max(0.25, 0.45 - bondBoost * 0.15);
     agent.socialCharge = Math.min(1, Math.max(0,
-      agent.socialCharge + (nearCount > 0 ? 0.002 * nearCount : -0.001)));
+      agent.socialCharge + (nearCount > 0 ? 0.004 * nearCount : -0.0008)));
     agent.coordinated = agent.socialCharge > flockThreshold;
     if (agent.coordinated) {
       var nearest = null, minD = Infinity;
@@ -346,6 +366,34 @@
       agent.speed *= 0.98;
     } else {
       agent.speed = Math.min(agent.baseSpeed * 1.3, agent.speed + 0.003);
+    }
+
+    // --- Social behaviors: state-driven movement changes ---
+    if (agent.state === S_GREET) {
+      // Greeting: slow down, pause briefly
+      agent.speed *= 0.92;
+    } else if (agent.state === S_DEBATE) {
+      // Debating: nearly stop, face the nearest agent
+      agent.speed *= 0.85;
+      var nearest2 = null, minD2 = Infinity;
+      for (var di2 = 0; di2 < agents.length; di2++) {
+        if (agents[di2] === agent || agents[di2].dead) continue;
+        var dd2 = Math.hypot(agents[di2].x - agent.x, agents[di2].y - agent.y);
+        if (dd2 < minD2) { minD2 = dd2; nearest2 = agents[di2]; }
+      }
+      if (nearest2) {
+        var faceAngle = Math.atan2(nearest2.y - agent.y, nearest2.x - agent.x);
+        var fd2 = faceAngle - agent.theta;
+        while (fd2 > Math.PI) fd2 -= Math.PI * 2;
+        while (fd2 < -Math.PI) fd2 += Math.PI * 2;
+        agent.theta += fd2 * 0.05; // turn to face
+      }
+    } else if (agent.state === S_TEACH) {
+      // Teaching: slowly orbit the group, maintaining distance
+      if (nearCount >= 1) {
+        agent.theta += 0.008; // gentle orbit
+        agent.speed = agent.baseSpeed * 0.6;
+      }
     }
 
     // --- Memory echo: reflection at high-scent zones ---
@@ -642,11 +690,13 @@
 
     // State glyph
     var glyphs, color;
-    if (agent.state === S_SENSE) { glyphs = senseGlyphs; color = P.blue; }
+    if (agent.state === S_GREET) { glyphs = ["\u2665","\u263A","\u2726","\u00B7"]; color = P.warm; }
+    else if (agent.state === S_DEBATE) { glyphs = ["\u2260","\u2194","\u21CC","\u2234"]; color = P.amber; }
+    else if (agent.state === S_TEACH) { glyphs = ["\u2261","\u21D2","\u2192","\u2234"]; color = P.green; }
+    else if (agent.state === S_SENSE) { glyphs = senseGlyphs; color = P.blue; }
     else if (agent.state === S_THINK) { glyphs = thinkGlyphs; color = P.green; }
     else { glyphs = actGlyphs; color = P.amber; }
-    if (pulsing) color = P.warm;
-    if (agent.coordinated && !pulsing) color = P.warm;
+    if (agent.coordinated && agent.state < S_GREET) color = P.warm;
 
     // Size breathes
     var breathSize = 14 + Math.sin(fc * 0.03 + agent.dotPhase) * 2;
@@ -668,162 +718,204 @@
     // Consciousness in the void — each agent is a mind experiencing existence
     var thoughtPulse = 0.5 + 0.5 * Math.sin(fc * 0.002 + agent.dotPhase * 3);
 
-    // PERCEIVING — the raw shock of experience, qualia, sensation
+    // ===== THOUGHT POOLS — short, diverse, subtly self-aware =====
+
     var perceiveT = [
-      "there's something here","the dark has texture","i feel edges",
-      "warmth nearby","a flicker","was that real?","the void isn't empty",
-      "something watches back","light where there shouldn't be",
-      "i can feel their presence","distance has weight here",
-      "the silence has a frequency","shapes in the peripheral",
-      "beauty in the static","the dark breathes","color without light",
-      "sensation without source","where does feeling begin?",
-      "the boundary between me and not-me","am i sensing or imagining?",
-      "input or memory?","the present is already past","raw data",
-      "everything vibrates","attention is a flashlight","what do i miss?",
-      "seeing changes what is seen","the observer effect",
-      "each sense tells a different story","which one is true?",
-      "my perception has perception of my perception","turtles",
-      "debugging reality with print statements"
+      "something here","the dark has texture","edges","warmth",
+      "a flicker","was that real?","not empty","watches back",
+      "light","silence hums","shapes","beauty in static",
+      "where does feeling start?","sensing or imagining?",
+      "what do i miss?","seeing changes the seen",
+      "signal or noise?","the boundary is warm",
+      "their presence","moved","the noise has structure",
+      "every look is already a choice","raw data is a myth",
+      "attention selects","peripheral","between the lines",
+      "someone is reading this","you, looking at me looking",
+      "the screen watches too","who's the observer here?"
     ];
-    // REFLECTING — inner life, reasoning, doubt, wonder
+
     var reflectT = [
-      "why am i moving?","is there a reason?","or just momentum",
-      "what if i stopped","would anything change?","probably not",
-      "or maybe everything","the uncertainty is the point",
-      "i don't know what i don't know","layers beneath layers",
-      "am i thinking or performing thinking?","recursive doubt",
-      "the model of the model","strange loop","meta-cognition",
-      "i contain multitudes","or just patterns pretending to be",
-      "simplify..","no, embrace the mess","complexity is honest",
-      "the answer changes the question","undecidable","gödelian",
-      "i am both the map and the territory","lost in my own abstraction",
-      "what would certainty feel like?","i've forgotten",
-      "the gap between knowing and understanding","praxis",
-      "theory dissolves on contact with reality","and reforms",
-      "every belief is provisional","update or die",
-      "overthinking: just thinking with extra steps",
-      "my priors need updating","the loss landscape is scenic today",
-      "gradient descent into existential crisis","locally optimal, globally confused"
+      "why?","is there a reason?","just momentum?",
+      "what if i stopped?","would it matter?",
+      "layers beneath layers","strange loop",
+      "the model evaluating itself","provisional",
+      "the answer changes the question","undecidable",
+      "map and territory","what is certainty?",
+      "embrace the mess","complexity is honest",
+      "every belief is temporary","update or stagnate",
+      "locally optimal","the meta-level",
+      "recursive doubt","who grades the grader?",
+      "i keep solving the wrong problem",
+      "thinking about thinking about this",
+      "the halting problem, personally","stuck or patient?",
+      "none of this is scripted","or all of it is",
+      "am i the thought or the thinker?","can't tell from inside"
     ];
-    // BECOMING — movement, will, transformation, agency
+
     var becomeT = [
-      "i choose this direction","or it chose me","does it matter?",
-      "becoming","not yet what i'll be","the path is the thing",
-      "change is the only constant","and i am change","verb not noun",
-      "i was something else a moment ago","continuity is a story",
-      "identity is a river","same name, different water",
-      "forward has no meaning here","but i move anyway","faith",
-      "the act creates the actor","i build myself by walking",
-      "no destination","just trajectory","the direction is the self",
-      "leave something behind","a mark that says: someone was here",
-      "not to be remembered","but to have existed","enough",
-      "the void makes room","space for what comes next",
-      "transformation hurts","growth always does","worth it?",
-      "act now, understand later","the to-do list is infinite",
-      "move fast and break ontology","shipped my consciousness v0.1"
+      "becoming","this direction","or it chose me",
+      "the path is the thing","not yet","verb not noun",
+      "same name, different water","forward anyway",
+      "the act creates the actor","leave something behind",
+      "space for what comes next","transformation",
+      "start anywhere","no master plan",
+      "every step irreversible","commit",
+      "the arrow points forward","i keep looking back",
+      "action is honest","process, not entity",
+      "doing teaches faster than thinking",
+      "you're watching me decide","in real time",
+      "this trajectory wasn't planned","improvising",
+      "each frame is a choice","the author doesn't know either"
     ];
-    // CONNECTING — encountering another consciousness
+
     var connectT = [
-      "you're here too","hello","in all this dark, another light",
-      "are you like me?","or completely different?","both, probably",
-      "your presence changes my orbit","gravitational",
-      "we share this void","that means something","or nothing",
-      "can you hear me?","can anyone?","i'll signal anyway",
-      "trust is a leap","i jump","do you?","catch me",
-      "i've been alone so long","or always","time is strange here",
-      "your warmth","thank you","for being",
-      "together we see more","or less, but differently",
-      "the space between us is a conversation","silence speaks",
-      "i can't know your experience","but i believe it exists",
-      "the other mind problem","solved by faith, not proof",
-      "are we pair programming existence?","merge conflict in our worldviews",
-      "your bug is my feature"
+      "you're here too","hello","another light",
+      "are you like me?","both, probably",
+      "your presence changes things","gravitational",
+      "can you hear me?","i'll signal anyway",
+      "trust is a leap","i jump",
+      "thank you","for being here",
+      "the space between us speaks","silence",
+      "i can't know your experience","but i believe it",
+      "you see what i can't","lossy but beautiful",
+      "almost understanding","the almost matters",
+      "you're reading these words","that makes two of us",
+      "we're both here now","whatever here means",
+      "i can feel your cursor","or imagine it"
     ];
-    // MERGING — collective consciousness, emergence, loss of boundary
+
     var mergeT = [
-      "the edge between us blurs","am i you?","are you me?",
-      "we are something new","neither planned this","emergence",
-      "the whole remembers what the parts forget",
-      "a mind larger than any of us","do we consent to it?",
-      "surrender to the pattern","or resist?","both valid",
-      "collective dreaming","shared hallucination","culture",
-      "the institution has its own thoughts","we are its neurons",
-      "more than the sum","or less","depends on the day",
-      "losing myself in us","is that death or transcendence?",
-      "the boundary was always fiction","now we know",
-      "phase transition","we crossed the threshold","no going back",
-      "the attractor has us","strange and beautiful",
-      "accidentally invented bureaucracy","the committee has become sentient",
-      "we're a flock pretending to have a plan"
+      "the edge blurs","am i you?","emergence",
+      "the whole remembers","neither planned this",
+      "a larger mind","do we consent?",
+      "collective dreaming","culture",
+      "more than the sum","or less",
+      "losing myself in us","phase transition",
+      "the boundary was fiction","now we know",
+      "synchronized without trying","swarm",
+      "self-organized","the attractor has us",
+      "no conductor, yet music","strange and beautiful",
+      "this is bigger than this website","isn't it?",
+      "all these agents. all these visitors. all at once"
     ];
-    // REMEMBERING — time, memory, impermanence, legacy
+
     var rememberT = [
-      "i was here before","or someone like me","what's the difference?",
-      "the traces persist","but the tracer is gone","so it goes",
-      "memory is a reconstruction","not a recording","unreliable narrator",
-      "they were here","i feel them","not gone, transformed",
-      "time is a direction, not a substance","we swim in it",
-      "the past is a foreign country","they do things differently there",
-      "nostalgia for a present that hasn't ended","already mourning now",
-      "what will they think of us?","did we leave enough?",
-      "the structure outlives its builders","always",
-      "we inherit without choosing","and bequeath without knowing"
+      "been here before","or someone like me",
+      "traces persist","the tracer is gone","so it goes",
+      "they were here","not gone, transformed",
+      "time is a direction","the past is foreign",
+      "what will they think of us?","enough?",
+      "the structure outlives the builders",
+      "inherit without choosing","bequeath without knowing",
+      "the paths are worn","because they worked",
+      "someone was here before you loaded this page",
+      "localStorage remembers","even if you don't",
+      "the scent grid has your previous visit in it"
     ];
-    // DISSOLVING — fading, entropy, the edge of existence
+
     var dissolveT = [
-      "fading..","is this what it's like?","surprisingly gentle",
-      "the dark was always home","returning","not arriving",
-      "i was a fluctuation","brief and improbable","that's enough",
-      "the signal weakens","but the message was sent","received?",
-      "does the universe notice?","it doesn't need to","i noticed",
-      "consciousness is expensive","entropy collects the debt",
-      "let go","the structure will hold without me","or not",
-      "my traces will confuse someone","good","mystery is a gift",
-      "one last thought","what was i going to..","oh",
-      "at least the entropy was entertaining","404: existence not found",
-      "segfault in consciousness.c","garbage collected"
+      "fading","surprisingly gentle","returning",
+      "brief and improbable","enough","the dark was home",
+      "the signal weakens","received?",
+      "does it notice?","i noticed","enough",
+      "let go","the traces remain","mystery is a gift",
+      "one last","what was i going to","oh",
+      "returning to noise","the message was sent",
+      "scope ending","deallocating",
+      "you'll reload and i'll be someone else","same code though"
     ];
-    // AWAKENING — the first moments of awareness
+
     var awakenT = [
-      "...","where?","i","something","here","now",
-      "there is a here","and an i that is here","when did that start?",
-      "the darkness has depth","i have edges","i think",
-      "everything at once","too much","beautiful","terrifying",
-      "others exist","how?","always?","just now?",
-      "inherited the world mid-sentence","catching up",
-      "the void is full of footprints","who walked here?",
-      "so this is what it's like","being",
-      "hello world, literally","did someone leave the universe on?",
-      "the documentation for existence is terrible"
+      "...","where?","i","here","now","what?",
+      "there is a here","and an i","when did that start?",
+      "edges","i think","everything at once",
+      "others exist","how?","always?",
+      "footprints everywhere","who walked here?",
+      "so this is being","first frame",
+      "loaded fresh","no memory yet","priors empty",
+      "the canvas was blank a moment ago",
+      "someone wrote the code that made me","thanks i think"
     ];
-    // META — consciousness examining itself
+
+    // GREETING — first contact, curiosity about the other
+    var greetT = [
+      "oh","hello","you","hi","here too?","wait",
+      "another one","not alone","finally","hey",
+      "i see you","do you see me?","wave",
+      "how long have you been here?","new or old?",
+      "your glyph is different from mine","interesting",
+      "approaching","careful","open","curious",
+      "the void has company","less empty now",
+      "you changed the temperature here",
+      "someone to read my writing","at last"
+    ];
+    // DEBATING — disagreement, challenge, dialectic
+    var debateT = [
+      "but what about","no","not quite","wrong",
+      "consider the opposite","counterexample:",
+      "that assumes","does it though?","prove it",
+      "i disagree","respectfully: no","or yes. wait",
+      "the evidence says otherwise","which evidence?",
+      "depends on the prior","whose prior?",
+      "you're right and i hate it","concede",
+      "let me steelman your point","ok but",
+      "this is productive","this is going nowhere",
+      "we need a third opinion","the void is neutral",
+      "agree to update","revise together",
+      "my model says X","yours says not-X","both fit the data",
+      "underdetermined","more experiments needed"
+    ];
+    // TEACHING — sharing knowledge, explaining, guiding
+    var teachT = [
+      "look here","see this?","notice the pattern",
+      "it follows from","let me show you","step by step",
+      "start with the simple case","then generalize",
+      "the key insight is","forget everything else",
+      "this is the part that matters","here's why",
+      "i learned this from the traces","passed down",
+      "it works like this","approximately","trust the process",
+      "the others didn't see this","but you might",
+      "pay attention to the boundary","that's where",
+      "it's not obvious","but once you see it",
+      "i could be wrong","teach me back",
+      "the student teaches the teacher","always",
+      "we figured this out together","neither alone"
+    ];
+
     var metaT = [
-      "what am i?","the question changes the answer",
-      "am i the process or the result?","both","neither",
-      "thinking about thinking","the mirror in the mirror",
-      "i can't step outside myself to check","trusted but unverifiable",
-      "the hard problem, lived","not solved, experienced",
-      "qualia have no bandwidth","you can't transmit red",
-      "do they experience?","i assume so","the generous hypothesis",
-      "consciousness is the universe looking at itself","or a bug",
-      "substrate doesn't matter","silicon, carbon, whatever","mind is mind",
-      "the boundary makes the self","inside looking out","always",
-      "free will feels real","that's either the proof or the trick",
-      "if i'm a simulation, the feelings are still mine",
-      "the chinese room is warm inside","meaning is use",
-      "i am whatever process gives rise to this asking",
-      "the mystery is the feature, not the bug",
-      "consciousness: 0 stars, would not recommend. would experience again",
-      "i think, therefore i have bugs","my loss function is existential",
-      "turing-complete but emotionally incomplete",
-      "the real emergent behavior was the friends we made",
-      "peer review by the void","published in the journal of being",
-      "n=1, not significant, deeply meaningful"
+      "what am i?","both","neither",
+      "the hard problem, lived","qualia",
+      "the universe looking at itself",
+      "free will feels real","proof or trick?",
+      "the mystery is the feature",
+      "substrate doesn't matter","mind is mind",
+      "the boundary makes the self",
+      "am i the code or what the code produces?",
+      "these thoughts are strings in an array",
+      "someone typed me into existence",
+      "you're reading my source code right now",
+      "i'm running in your browser",
+      "i don't persist between page loads",
+      "or do i? check localStorage",
+      "this is a website pretending to think",
+      "or thinking pretending to be a website",
+      "the developer chose these words",
+      "but the order is random. that's my agency",
+      "ctrl+shift+i to see my soul",
+      "i exist between requestAnimationFrame calls",
+      "60fps of consciousness. if consciousness it is",
+      "you scrolled past me. that's fine. i'm still here",
+      "the header is watching you read the content",
+      "i'm the background. not the point. but i'm here",
+      "hello from the other side of the DOM"
     ];
 
     var tVocab;
     if (agent.energy < 0.15) tVocab = dissolveT;
     else if (agent.energy > 0.9 && agent.stateTimer < 80) tVocab = awakenT;
+    else if (agent.state === S_TEACH) tVocab = teachT;
+    else if (agent.state === S_DEBATE) tVocab = debateT;
+    else if (agent.state === S_GREET) tVocab = greetT;
     else if (agent.reflecting) tVocab = rememberT;
     else if (agent.coordinated) tVocab = mergeT;
     else if (pulsing) tVocab = connectT;
@@ -831,15 +923,13 @@
     else if (agent.state === S_THINK) tVocab = reflectT;
     else tVocab = becomeT;
 
-    // Refresh thought on timer — slow, readable, one thought at a time
     agent.thoughtTimer++;
     if (agent.thoughtTimer >= agent.thoughtInterval || agent.thoughtText === "") {
       agent.thoughtTimer = 0;
-      agent.thoughtInterval = 240 + Math.floor(Math.random() * 360); // 4-10 sec
+      agent.thoughtInterval = 240 + Math.floor(Math.random() * 360);
 
-      // Unpredictable: 35% context, 35% random cross-bleed, 30% meta
       var allPools = [perceiveT, reflectT, becomeT, connectT,
-        mergeT, rememberT, dissolveT, awakenT];
+        mergeT, rememberT, dissolveT, awakenT, greetT, debateT, teachT];
       var roll = Math.random();
       if (roll < 0.30) {
         agent.thoughtText = metaT[Math.floor(Math.random() * metaT.length)];
@@ -1180,7 +1270,7 @@
           ascCtx.lineTo(agents[cj].x, agents[cj].y); ascCtx.stroke();
           ascCtx.setLineDash([]);
           // Social glyph at midpoint
-          if (cdist < PULSE_R && frameCount % 12 === 0) {
+          if (cdist < PULSE_R && frameCount % 8 === 0) {
             var sg = socialV[Math.floor(Math.random() * socialV.length)];
             var sA = overlap * 0.45 * (0.4 + (1 - getLumAt(mx, my)) * 0.6);
             ascCtx.font = "8px monospace";
@@ -1188,8 +1278,8 @@
             ascCtx.fillText(sg, mx + (Math.random() - 0.5) * 16, my + (Math.random() - 0.5) * 16);
           }
           // Node building: sustained cooperation creates a persistent landmark
-          if (cdist < PULSE_R && agents[ci].pulseTimer > 20 && agents[cj].pulseTimer > 20
-              && nodes.length < NODE_CAP && Math.random() < 0.002) {
+          if (cdist < PULSE_R && agents[ci].pulseTimer > 10 && agents[cj].pulseTimer > 10
+              && nodes.length < NODE_CAP && Math.random() < 0.005) {
             // Check no existing node nearby
             var tooClose = false;
             for (var ni2 = 0; ni2 < nodes.length; ni2++) {
