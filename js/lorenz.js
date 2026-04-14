@@ -83,7 +83,7 @@
 
   // --- State ---
   var mouseX = -1, mouseY = -1, cursorX = -1, cursorY = -1;
-  var isHovering = false, revealR = 130, revealAlpha = 0, animating = false;
+  var isHovering = false, revealR = 130, revealAlpha = 0, animating = false, paused = false;
   var wanderX = 0, wanderY = 0, wanderTargetX = 0, wanderTargetY = 0;
   var wanderInited = false, wanderSpeed = 0.008;
   var isTouching = false, touchFadeTimer = 0;
@@ -217,6 +217,7 @@
   }, { passive: true });
   header.addEventListener("touchend", function () { isTouching = false; touchFadeTimer = 120; });
   header.addEventListener("touchcancel", function () { isTouching = false; touchFadeTimer = 120; });
+  header.addEventListener("click", function () { paused = !paused; });
   function startAnim() { if (!animating) { animating = true; requestAnimationFrame(animate); } }
 
   function getColors() {
@@ -1445,6 +1446,7 @@
   var frameCount = 0;
 
   function animate() {
+    if (paused) { requestAnimationFrame(animate); return; }
     var w = header.clientWidth, h = header.clientHeight;
     frameCount++;
     initWander();
