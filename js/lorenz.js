@@ -7,6 +7,10 @@
   var header = document.querySelector("header");
   if (!header) return;
 
+  // Safe angle normalization — O(1), no loops, no freeze risk
+  function normAngle(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+  function angleDiff(from, to) { return Math.atan2(Math.sin(to - from), Math.cos(to - from)); }
+
   // ===== Vocabulary by Markov blanket role =====
   // Blackboard vocabulary — what gets written in the void
   var senseV = ["?","...","look","here","edge","what?","hm","see","feel","notice"];
@@ -588,29 +592,21 @@
     // Movement personality modulates steering
     if (agent.movStyle === 0) {
       // Wanderer: wide lazy arcs, overshoots, slow turns
-      var dTheta = desired - agent.theta;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      var dTheta = angleDiff(agent.theta, desired);
       agent.theta += Math.max(-0.010, Math.min(0.010, dTheta));
     } else if (agent.movStyle === 1) {
       // Pacer: prefers vertical movement, sweeps up and down
       var vertBias = Math.sin(agent.movTimer * 0.005 + agent.movPhase) * 0.02;
-      var dTheta = desired - agent.theta;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      var dTheta = angleDiff(agent.theta, desired);
       agent.theta += Math.max(-0.015, Math.min(0.015, dTheta)) + vertBias;
     } else if (agent.movStyle === 2) {
       // Circler: spirals and orbits, adds constant rotation
-      var dTheta = desired - agent.theta;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      var dTheta = angleDiff(agent.theta, desired);
       agent.theta += Math.max(-0.012, Math.min(0.012, dTheta)) + 0.005;
     } else if (agent.movStyle === 3) {
       // Explorer: diagonal sweeps, crosses the full canvas
       var diagBias = Math.sin(agent.movTimer * 0.003 + agent.movPhase) * 0.008;
-      var dTheta = desired - agent.theta;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      var dTheta = angleDiff(agent.theta, desired);
       agent.theta += Math.max(-0.020, Math.min(0.020, dTheta)) + diagBias;
       agent.speed = Math.max(agent.speed, agent.baseSpeed * 1.1); // stays fast
     } else if (agent.movStyle === 5) {
@@ -680,9 +676,7 @@
         if (cursorDist > 100) agent.theta += (toCursor - agent.theta) * 0.01;
         agent.speed = agent.baseSpeed * (0.8 + 0.4 * Math.min(1, cursorDist / 150));
       } else {
-        var dTheta = desired - agent.theta;
-        while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-        while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+        var dTheta = angleDiff(agent.theta, desired);
         agent.theta += Math.max(-0.015, Math.min(0.015, dTheta));
       }
 
@@ -693,9 +687,7 @@
 
     } else {
       // Homebody: stays in a small area, tight turns
-      var dTheta = desired - agent.theta;
-      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      var dTheta = angleDiff(agent.theta, desired);
       agent.theta += Math.max(-0.025, Math.min(0.025, dTheta));
       agent.speed *= 0.995;
     }
@@ -731,9 +723,7 @@
         if (centDist < diagLen * 0.25) {
           var pushAway = toCentroid + Math.PI; // opposite direction
           var pushStr = (1 - centDist / (diagLen * 0.25)) * 0.003;
-          var pd = pushAway - agent.theta;
-          while (pd > Math.PI) pd -= Math.PI * 2;
-          while (pd < -Math.PI) pd += Math.PI * 2;
+          var pd = angleDiff(agent.theta, pushAway);
           agent.theta += pd * pushStr;
         }
       }
@@ -750,9 +740,7 @@
         var away = Math.atan2(-ady, -adx);
         // Gentle deflection — weaker so agents linger near each other
         var deflect = (INTERACT_R - dist) / INTERACT_R * 0.008;
-        var td = away - agent.theta;
-        while (td > Math.PI) td -= Math.PI * 2;
-        while (td < -Math.PI) td += Math.PI * 2;
+        var td = angleDiff(agent.theta, away);
         agent.theta += td * deflect;
         if (dist < PULSE_R) {
           agent.pulseTimer = 80; // longer social engagement
@@ -884,9 +872,7 @@
 
     } else if (agent.coordinated && socNearest) {
       // Flocking: match neighbor's heading — parallel motion like birds
-      var headingDiff = socNearest.theta - agent.theta;
-      while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
-      while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+      var headingDiff = angleDiff(agent.theta, socNearest.theta);
       agent.theta += headingDiff * 0.03; // align headings
 
     } else if (agent.pulseTimer > 0 && socNearest) {
@@ -914,7 +900,7 @@
     if (agent.reflecting) {
       agent.reflectTimer -= dt;
       agent.speed *= 0.92;
-      if (agent.reflectTimer % 10 === 0) {
+      if (Math.floor(agent.reflectTimer) % 10 === 0 && Math.floor(agent.reflectTimer - dt) % 10 !== 0) {
         trails.push({ x: agent.x + (Math.random() - 0.5) * 5, y: agent.y + (Math.random() - 0.5) * 5,
           glyph: thinkV[Math.floor(Math.random() * thinkV.length)], fontSize: 8, color: P.green,
           baseAlpha: 0.45, age: 0, maxAge: TRAIL_AGE });
@@ -999,7 +985,7 @@
       }
 
       // Pulsing rings — expanding distress signal
-      if (abT % 20 < 3) {
+      if (Math.floor(abT) % 20 < 3) {
         var ringR = 5 + abProg * 30 + (abT % 20) * 4;
         marks.push({ type: "ring", x: agent.x, y: agent.y,
           r: ringR, color: P.rose, alpha: 0.12 * (1 - abProg * 0.5),
@@ -1007,7 +993,7 @@
       }
 
       // Fragmented thoughts — the mind breaking
-      if (abT % 30 === 0) {
+      if (Math.floor(abT) % 30 === 0 && Math.floor(abT - dt) % 30 !== 0) {
         var abThoughts = [
           "can't quite\u2014","what was i\u2014","the shapes are\u2014",
           "my glyph is\u2014","losing the\u2014","where did\u2014",
@@ -1070,6 +1056,7 @@
     }
 
     // --- Move ---
+    agent.theta = normAngle(agent.theta); // normalize after all steering
     agent.speed += (agent.baseSpeed * epochCur.speedMul - agent.speed) * 0.02 * dt;
     if (!agent.reflecting) {
       agent.x += Math.cos(agent.theta) * agent.speed * dt;
@@ -1077,12 +1064,16 @@
     }
     agent.x = Math.max(5, Math.min(w - 5, agent.x));
     agent.y = Math.max(5, Math.min(h - 5, agent.y));
+    // Safety: NaN/Infinity guard — reset to center if corrupted
+    if (!isFinite(agent.x) || !isFinite(agent.y) || !isFinite(agent.theta) || !isFinite(agent.speed)) {
+      agent.x = w * 0.5; agent.y = h * 0.5; agent.theta = 0; agent.speed = agent.baseSpeed;
+    }
 
     // --- Environmental actions: agents interact with the canvas, not just mark it ---
     agent.depositTimer += dt;
     var shouldAct = agent.depositTimer >= 40; // sparse, deliberate deposits
     if (Math.abs(agent.theta - agent.prevTheta) > 0.012) shouldAct = true;
-    if (agent.pulseTimer === 39) shouldAct = true;
+    if (agent.pulseTimer > 38 && agent.pulseTimer < 41) shouldAct = true;
 
     if (shouldAct && !agent.reflecting) {
       agent.depositTimer = 0;
