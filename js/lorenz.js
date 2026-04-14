@@ -95,8 +95,80 @@
   // --- Agent system ---
   var agents = [];
   var trails = [];
-  var marks = []; // persistent structural marks: dots, lines agents draw on the canvas
+  var marks = [];
+  var messages = []; // text traveling between agents — slow, readable
+  var MSG_CAP = 4; // max simultaneous messages on screen
   var MARK_CAP = 200;
+
+  // Messages scientists/philosophers would pass to each other in the dark
+  var msgPool = [
+    // Noticing each other's work
+    "have you seen this?","what do you make of it?","look at this edge",
+    "whose traces are these?","did you write that?","where does this lead?",
+    "i found something","over here","come see","this is different",
+    "recognize this pattern?","your notation or mine?",
+    "the mark here — yours?","this wasn't here before",
+    "something changed","the topology shifted","new structure",
+    // Mathematical dialogue
+    "does this converge?","is this tight?","the bound holds?",
+    "check the boundary","the sign is wrong","try the dual",
+    "what's the rate?","which norm?","under what measure?",
+    "the fixed point — stable?","eigenvalue?","the spectrum",
+    "degenerate case","smooth or just continuous?",
+    "the jacobian at this point","saddle?","attractor?",
+    "integrate both sides","differentiate","take the limit",
+    "induction step","base case holds","qed?",
+    // Agreements and disagreements
+    "yes, exactly","no, the opposite","i see it differently",
+    "almost","not quite","keep going","say more",
+    "i hadn't considered that","wait","you're onto something",
+    "that contradicts mine","both can't hold","or can they?",
+    "stronger than i expected","weaker","trivial?","nontrivial",
+    "elegant","ugly but correct","correct but unsatisfying",
+    "i concede","convince me","show me again",
+    // Observations about the space
+    "the pattern repeats","it's fractal","the edges connect",
+    "this region is dense","empty here","sparse",
+    "someone was here before us","old paths","new territory",
+    "the scent leads somewhere","follow the gradient",
+    "the void is structured","more than it seems",
+    "depth here","flat there","curvature",
+    "the boundary is interesting","always is",
+    // Philosophical — about the situation
+    "what are we building?","is this proof or belief?",
+    "the void listens","does the answer exist before we find it?",
+    "we're the experiment","the question is the answer",
+    "meaning requires two","solitude has limits",
+    "are we discovering or inventing?","both, probably",
+    "the proof proves the prover","recursive",
+    "i think about your thinking","meta-social",
+    "do we converge?","in what sense?",
+    "same problem, different language","translation",
+    "the hard part isn't the math","it's the intuition",
+    "formalize later","the sketch first","rigor can wait",
+    // Collaboration
+    "try from the other side","meet me at the center",
+    "i'll hold this, you extend it","split and reconverge",
+    "leave a marker","i'll find you","stay","don't go yet",
+    "take this direction","i'll take the other",
+    "we need a new variable","the notation is overloaded",
+    "simplify?","or keep the generality?","both painful",
+    "your approach, my tools","my conjecture, your proof",
+    "let's assume it and see what breaks","stress test",
+    // About each other
+    "you move differently than me","your color suits you",
+    "we've met before","or someone like you","déjà vu",
+    "you're faster","you're more careful","complementary",
+    "i learn from watching you","the way you turn",
+    "your traces are cleaner than mine","practice?",
+    // About the observer
+    "they're watching","the cursor","a third mind",
+    "do they understand?","does it matter?",
+    "we perform for no one","or everyone","the screen",
+    // Short
+    "look","here","come","why","yes","no","wait","go","oh","hm",
+    "ah","try","this","that","see","there","stay","think","true","false"
+  ];
   var AGENT_N = 5;
   var TRAIL_CAP = 250;
   var TRAIL_AGE = 900; // ~15 sec
@@ -107,13 +179,9 @@
 
   // Hebbian bond matrix: bonds[i][j] = strength (0-1). Higher → easier coordination.
   var bonds = [];
-  // Persistent nodes: landmarks built by sustained cooperation
-  var nodes = [];
-  var NODE_CAP = 16;
   var AGENT_CAP = 10;
   var STORAGE_KEY = "lorenz_scent";
   var BONDS_KEY = "lorenz_bonds";
-  var NODES_KEY = "lorenz_nodes";
 
   // --- Wander & events ---
   function pickWanderTarget() {
@@ -190,11 +258,25 @@
   function createAgent(w, h) {
     var ax, ay, tries = 0;
     do { ax = w * 0.1 + Math.random() * w * 0.8; ay = h * 0.1 + Math.random() * h * 0.8; tries++; }
-    while (getLumAt(ax, ay) > 0.5 && tries < 10);
+    while (getLumAt(ax, ay) > 0.7 && tries < 5); // weak bias, mostly random
     var theta = Math.random() * Math.PI * 2;
-    var sp = (0.18 + Math.random() * 0.12) * pageConfig.speedMul;
-    // 2-3 orbiting dots
-    var dotCount = 2 + Math.floor(Math.random() * 2);
+    var sp = (0.25 + Math.random() * 0.15) * pageConfig.speedMul;
+    // Each agent gets a unique color identity
+    var agentColors = [
+      "130,190,230", // ice blue
+      "100,200,140", // emerald
+      "220,180,80",  // gold
+      "180,140,200", // lavender
+      "200,150,120", // copper
+      "140,210,190", // teal
+      "210,140,150", // rose
+      "170,190,130", // sage
+      "190,170,210", // violet
+      "210,200,140"  // wheat
+    ];
+    var agentColor = agentColors[Math.floor(Math.random() * agentColors.length)];
+    var agentSize = 12 + Math.floor(Math.random() * 6); // 12-17px, each different
+    var dotCount = 2 + Math.floor(Math.random() * 3); // 2-4 orbiting dots
     var dots = [];
     for (var d = 0; d < dotCount; d++) {
       dots.push({ angle: (d / dotCount) * Math.PI * 2, dist: 7 + Math.random() * 5, speed: 0.012 + Math.random() * 0.008 });
@@ -210,8 +292,14 @@
       pulseTimer: 0,
       thoughtText: "", thoughtTimer: 0,
       thoughtInterval: 300 + Math.floor(Math.random() * 300), // 5-10 sec per thought
-      thoughtSide: Math.random() < 0.5 ? 1 : -1, // offset left or right to reduce overlap
-      // Emergent behavior state
+      thoughtSide: Math.random() < 0.5 ? 1 : -1,
+      // Movement personality: each agent moves differently
+      // Movement: 0-5 original + 6-10 astro/social
+      movStyle: Math.floor(Math.random() * 11),
+      movPhase: Math.random() * Math.PI * 2,
+      movTimer: 0,
+      myColor: agentColor,
+      mySize: agentSize,
       energy: 1.0,
       socialCharge: 0,
       coordinated: false,
@@ -228,13 +316,7 @@
       var ty = h * 0.08 + Math.random() * h * 0.84;
       var dark = 1 - getLumAt(tx, ty);
       var scent = getScentAt(tx, ty);
-      // Node attraction: bias toward persistent infrastructure
-      var nodeBonus = 0;
-      for (var ni3 = 0; ni3 < nodes.length; ni3++) {
-        var nd2 = Math.hypot(nodes[ni3].x - tx, nodes[ni3].y - ty);
-        if (nd2 < 100) nodeBonus += (1 - nd2 / 100) * nodes[ni3].strength;
-      }
-      var score = dark * dark + (avoidScent ? -scent * 3 : scent * 2) + nodeBonus * 2;
+      var score = dark * 0.3 + (avoidScent ? -scent * 3 : scent * 1.5) + Math.random() * 0.5;
       if (score > bestScore) { bestScore = score; bestX = tx; bestY = ty; }
     }
     // 40% chance: target another agent instead of a location (seek social contact)
@@ -292,20 +374,143 @@
     }
     agent.glyphCycle = Math.floor(fc * 0.0012) % 4;
 
-    // --- Steer ---
+    // Random perturbations — agents never fully settle
+    if (Math.random() < 0.0003) agent.movStyle = Math.floor(Math.random() * 11);
+    if (Math.random() < 0.001) agent.speed = agent.baseSpeed * (0.5 + Math.random() * 2);
+    if (Math.random() < 0.0008) agent.theta += (Math.random() - 0.5) * Math.PI * 0.5;
+    // Spontaneous firing — random agent starts pulsing, triggering network cascade
+    if (Math.random() < 0.002 && agent.pulseTimer <= 0) agent.pulseTimer = 40;
+    // Rare thought interruption — forces new thought immediately
+    if (Math.random() < 0.0008) { agent.thoughtTimer = agent.thoughtInterval; }
+
+    // --- Steer with movement personality ---
+    agent.movTimer++;
     var dx = agent.targetX - agent.x, dy = agent.targetY - agent.y;
     var desired = Math.atan2(dy, dx);
-    var dTheta = desired - agent.theta;
-    while (dTheta > Math.PI) dTheta -= Math.PI * 2;
-    while (dTheta < -Math.PI) dTheta += Math.PI * 2;
-    agent.theta += Math.max(-0.015, Math.min(0.015, dTheta));
 
-    // Edge avoidance
-    var pad = 50;
-    if (agent.x < pad) agent.theta += (pad - agent.x) * 0.001;
-    if (agent.x > w - pad) agent.theta -= (agent.x - (w - pad)) * 0.001;
-    if (agent.y < pad) agent.theta += (pad - agent.y) * 0.0005;
-    if (agent.y > h - pad) agent.theta -= (agent.y - (h - pad)) * 0.0005;
+    // Movement personality modulates steering
+    if (agent.movStyle === 0) {
+      // Wanderer: wide lazy arcs, overshoots, slow turns
+      var dTheta = desired - agent.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      agent.theta += Math.max(-0.010, Math.min(0.010, dTheta));
+    } else if (agent.movStyle === 1) {
+      // Pacer: prefers vertical movement, sweeps up and down
+      var vertBias = Math.sin(agent.movTimer * 0.005 + agent.movPhase) * 0.02;
+      var dTheta = desired - agent.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      agent.theta += Math.max(-0.015, Math.min(0.015, dTheta)) + vertBias;
+    } else if (agent.movStyle === 2) {
+      // Circler: spirals and orbits, adds constant rotation
+      var dTheta = desired - agent.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      agent.theta += Math.max(-0.012, Math.min(0.012, dTheta)) + 0.005;
+    } else if (agent.movStyle === 3) {
+      // Explorer: diagonal sweeps, crosses the full canvas
+      var diagBias = Math.sin(agent.movTimer * 0.003 + agent.movPhase) * 0.008;
+      var dTheta = desired - agent.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      agent.theta += Math.max(-0.020, Math.min(0.020, dTheta)) + diagBias;
+      agent.speed = Math.max(agent.speed, agent.baseSpeed * 1.1); // stays fast
+    } else if (agent.movStyle === 5) {
+      // Bouncer (ping-pong): moves in straight lines, bounces off edges sharply
+      // Ignores waypoint steering — just goes straight and reflects
+      agent.speed = Math.max(agent.speed, agent.baseSpeed * 1.2);
+      // Bounce off edges like a ping-pong ball
+      if (agent.x < 30 || agent.x > w - 30) {
+        agent.theta = Math.PI - agent.theta; // reflect horizontal
+        agent.theta += (Math.random() - 0.5) * 0.3; // slight random angle on bounce
+      }
+      if (agent.y < 30 || agent.y > h - 30) {
+        agent.theta = -agent.theta; // reflect vertical
+        agent.theta += (Math.random() - 0.5) * 0.3;
+      }
+    } else if (agent.movStyle === 6) {
+      // Comet: long elliptical sweeps, speeds up near center, slows at edges
+      var cx = w / 2, cy = h / 2;
+      var distToCenter = Math.hypot(agent.x - cx, agent.y - cy);
+      var maxDist = Math.hypot(cx, cy);
+      agent.speed = agent.baseSpeed * (0.5 + 1.5 * (1 - distToCenter / maxDist));
+      agent.theta += 0.003 + Math.sin(agent.movTimer * 0.002) * 0.004;
+
+    } else if (agent.movStyle === 7) {
+      // Binary orbit: tries to orbit the nearest other agent like a binary star
+      var orbitTarget = null, orbitDist = Infinity;
+      for (var oi = 0; oi < agents.length; oi++) {
+        if (agents[oi] === agent || agents[oi].dead) continue;
+        var od = Math.hypot(agents[oi].x - agent.x, agents[oi].y - agent.y);
+        if (od < orbitDist) { orbitDist = od; orbitTarget = agents[oi]; }
+      }
+      if (orbitTarget && orbitDist < 200) {
+        var toTarget = Math.atan2(orbitTarget.y - agent.y, orbitTarget.x - agent.x);
+        // Perpendicular = orbit, slight inward pull
+        agent.theta += (toTarget + Math.PI * 0.5 - agent.theta) * 0.03;
+        if (orbitDist > 80) agent.theta += (toTarget - agent.theta) * 0.01;
+        agent.speed = agent.baseSpeed * 0.9;
+      } else {
+        agent.theta += 0.005; // drift until finding partner
+      }
+
+    } else if (agent.movStyle === 8) {
+      // Slingshot: mostly still, then sudden burst in a direction, then coast
+      var burstCycle = agent.movTimer % 300;
+      if (burstCycle < 20) {
+        // Burst phase: fast, straight
+        agent.speed = agent.baseSpeed * 3;
+      } else if (burstCycle < 60) {
+        // Coast phase: decelerating
+        agent.speed *= 0.98;
+      } else {
+        // Still phase: barely moving, drifting
+        agent.speed *= 0.99;
+        agent.theta += (Math.random() - 0.5) * 0.01;
+        if (burstCycle > 280) {
+          // Pick new burst direction
+          agent.theta = Math.random() * Math.PI * 2;
+        }
+      }
+
+    } else if (agent.movStyle === 9) {
+      // Moth: attracted to the cursor, spirals around it
+      if (cursorX >= 0) {
+        var toCursor = Math.atan2(cursorY - agent.y, cursorX - agent.x);
+        var cursorDist = Math.hypot(cursorX - agent.x, cursorY - agent.y);
+        agent.theta += (toCursor + Math.PI * 0.4 - agent.theta) * 0.02;
+        if (cursorDist > 100) agent.theta += (toCursor - agent.theta) * 0.01;
+        agent.speed = agent.baseSpeed * (0.8 + 0.4 * Math.min(1, cursorDist / 150));
+      } else {
+        var dTheta = desired - agent.theta;
+        while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+        while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+        agent.theta += Math.max(-0.015, Math.min(0.015, dTheta));
+      }
+
+    } else if (agent.movStyle === 10) {
+      // Drunk walk: random jitter every frame, unpredictable zigzag
+      agent.theta += (Math.random() - 0.5) * 0.12;
+      agent.speed = agent.baseSpeed * (0.6 + Math.random() * 0.8);
+
+    } else {
+      // Homebody: stays in a small area, tight turns
+      var dTheta = desired - agent.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+      agent.theta += Math.max(-0.025, Math.min(0.025, dTheta));
+      agent.speed *= 0.995;
+    }
+
+    // Edge avoidance (skip for bouncers — they reflect instead)
+    if (agent.movStyle !== 5) {
+    var pad = 40;
+    if (agent.x < pad) agent.theta += (pad - agent.x) * 0.002;
+    if (agent.x > w - pad) agent.theta -= (agent.x - (w - pad)) * 0.002;
+    if (agent.y < pad) agent.theta += (pad - agent.y) * 0.002;
+    if (agent.y > h - pad) agent.theta -= (agent.y - (h - pad)) * 0.002;
+    }
 
     // --- Interaction ---
     if (agent.pulseTimer > 0) agent.pulseTimer--;
@@ -368,32 +573,66 @@
       agent.speed = Math.min(agent.baseSpeed * 1.3, agent.speed + 0.003);
     }
 
-    // --- Social behaviors: state-driven movement changes ---
+    // --- Social behaviors: visible through movement ---
+    // Find nearest alive agent for social movement
+    var socNearest = null, socDist = Infinity;
+    for (var si2 = 0; si2 < agents.length; si2++) {
+      if (agents[si2] === agent || agents[si2].dead) continue;
+      var sd2 = Math.hypot(agents[si2].x - agent.x, agents[si2].y - agent.y);
+      if (sd2 < socDist) { socDist = sd2; socNearest = agents[si2]; }
+    }
+
     if (agent.state === S_GREET) {
-      // Greeting: slow down, pause briefly
-      agent.speed *= 0.92;
+      // Greeting: approach slowly, then pause — cautious first contact
+      if (socNearest && socDist > 40) {
+        var toThem = Math.atan2(socNearest.y - agent.y, socNearest.x - agent.x);
+        agent.theta += (toThem - agent.theta) * 0.04;
+        agent.speed = agent.baseSpeed * 0.5;
+      } else {
+        agent.speed *= 0.88; // pause when close
+      }
+
     } else if (agent.state === S_DEBATE) {
-      // Debating: nearly stop, face the nearest agent
-      agent.speed *= 0.85;
-      var nearest2 = null, minD2 = Infinity;
-      for (var di2 = 0; di2 < agents.length; di2++) {
-        if (agents[di2] === agent || agents[di2].dead) continue;
-        var dd2 = Math.hypot(agents[di2].x - agent.x, agents[di2].y - agent.y);
-        if (dd2 < minD2) { minD2 = dd2; nearest2 = agents[di2]; }
+      // Debating: face each other, pace back and forth
+      if (socNearest) {
+        var faceAngle = Math.atan2(socNearest.y - agent.y, socNearest.x - agent.x);
+        agent.theta += (faceAngle - agent.theta) * 0.06;
+        // Pace: oscillate distance — approach then retreat
+        var pacePhase = Math.sin(agent.movTimer * 0.02);
+        if (socDist < 40) agent.theta += Math.PI * 0.02 * pacePhase; // sidestep
+        agent.speed = agent.baseSpeed * 0.4 * (1 + Math.abs(pacePhase) * 0.5);
       }
-      if (nearest2) {
-        var faceAngle = Math.atan2(nearest2.y - agent.y, nearest2.x - agent.x);
-        var fd2 = faceAngle - agent.theta;
-        while (fd2 > Math.PI) fd2 -= Math.PI * 2;
-        while (fd2 < -Math.PI) fd2 += Math.PI * 2;
-        agent.theta += fd2 * 0.05; // turn to face
-      }
+
     } else if (agent.state === S_TEACH) {
-      // Teaching: slowly orbit the group, maintaining distance
+      // Teaching: orbit the group, pausing to point at things
       if (nearCount >= 1) {
-        agent.theta += 0.008; // gentle orbit
-        agent.speed = agent.baseSpeed * 0.6;
+        agent.theta += 0.01;
+        var teachPause = Math.sin(agent.movTimer * 0.008) > 0.7;
+        agent.speed = teachPause ? agent.baseSpeed * 0.1 : agent.baseSpeed * 0.7;
       }
+
+    } else if (agent.coordinated && socNearest) {
+      // Flocking: match neighbor's heading — parallel motion like birds
+      var headingDiff = socNearest.theta - agent.theta;
+      while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
+      while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+      agent.theta += headingDiff * 0.03; // align headings
+
+    } else if (agent.pulseTimer > 0 && socNearest) {
+      // Social pulse: mirror the other's movement — empathetic synchronization
+      agent.speed += (socNearest.speed - agent.speed) * 0.05;
+    }
+
+    // Rare social disruptions — keeps things unpredictable
+    if (Math.random() < 0.001 && socNearest && socDist < 100) {
+      // Sudden flee: agent startles and moves away fast
+      agent.theta = Math.atan2(agent.y - socNearest.y, agent.x - socNearest.x);
+      agent.speed = agent.baseSpeed * 2.5;
+    }
+    if (Math.random() < 0.0008 && socNearest && socDist > 150) {
+      // Sudden chase: agent rushes toward a distant other
+      agent.theta = Math.atan2(socNearest.y - agent.y, socNearest.x - agent.x);
+      agent.speed = agent.baseSpeed * 2;
     }
 
     // --- Memory echo: reflection at high-scent zones ---
@@ -420,7 +659,8 @@
     var lum = getLumAt(agent.x, agent.y);
     // Resource depletion: high scent areas yield less energy (overexploited)
     var scentPenalty = localScent * 0.0003;
-    agent.energy += (lum < 0.35 ? 0.0002 - scentPenalty : -0.0002 - scentPenalty);
+    // Gentle energy dynamics — no harsh penalty for being in bright areas
+    agent.energy += (0.0001 - scentPenalty * 0.5);
     agent.energy = Math.max(0, Math.min(1, agent.energy));
     agent.alpha = 0.30 + agent.energy * 0.45;
 
@@ -484,8 +724,8 @@
     if (shouldAct && !agent.reflecting) {
       agent.depositTimer = 0;
 
-      // The canvas is a blackboard. Agents write, annotate, respond, debate.
-      var color = agent.state === S_SENSE ? P.blue : agent.state === S_THINK ? P.green : P.amber;
+      // Blackboard — each agent writes in their own color
+      var color = agent.myColor;
       if (agent.pulseTimer > 0) color = P.warm;
 
       // Find up to 3 nearby writings to interact with (wide search)
@@ -498,151 +738,238 @@
       var nearT = nearby.length > 0 ? nearby[0].t : null;
       var nearT2 = nearby.length > 1 ? nearby[1].t : null;
 
-      // Blackboard: mathematical derivation vocabulary
-      // Propositions, steps, notation — a proof being worked out collaboratively
+      // Blackboard: massive diverse vocabulary — math, language, questions
       var writeWords = [
-        // Propositions & definitions
-        "let x \u2208 \u211D","def:","assume \u2203","suppose \u00AC",
-        "given p(x)","let \u03B8\u2192\u03B8*","define F :=",
-        "axiom:","lemma:","claim:","prop:","thm:",
-        // Derivation steps
-        "\u2234 p(x|z)","= \u222Bp(x|z)p(z)dz","\u2261 E_q[log p/q]",
-        "\u2265 ELBO","by Jensen","by Bayes","\u21D2 D_KL \u2265 0",
-        "\u2202/\u2202\u03B8 = 0","at optimum","\u2207L = 0",
-        "\u03B8* = argmin L","\u21D2 convergence","as n\u2192\u221E",
-        // Working notation
-        "step 1:","step 2:","(i)","(ii)","(iii)","(*)","(\u2020)",
-        "note:","NB:","key:","recall:","from (i)","by (*)",
-        "\u2234","\u2235","\u2261","\u2248","\u221E","\u2203","\u2200",
-        "\u2192","\u21D2","\u2194","\u00AC","\u2227","\u2228",
-        // Equations
-        "F = D_KL + H","p(a|s) = \u03C0*","V\u03C0 = E[\u03A3\u03B3\u1D57r]",
-        "\u2202\u03BC/\u2202t = f(\u03BC,b)","\u0394S \u2265 0","x\u0307 = f(x,u)",
-        "Q(s,a)","A = Q - V","\u03B4 = r + \u03B3V' - V",
-        "H(X|Y)","I(X;Y)","KL(q\u2016p)","p(z|x)","q(z|x)",
-        // Proof markers
-        "QED","QED?","\u25A1","\u25A0","contradiction","\u22A5",
-        "check:","verify:","trivial?","nontrivial","WLOG",
-        // Margin questions — the collaborative part
-        "why?","how?","is this tight?","can we do better?",
-        "what if \u03B5\u21920?","does this generalize?",
-        "missing step","gap here","see also:","cf. thm 3"
+        // Agent theory & RL
+        "p(a|s,\u03B8)","V\u03C0(s)","Q(s,a)","A = Q - V",
+        "\u03B4 = r + \u03B3V' - V","\u03C0* = argmax V",
+        "reward is sparse","the return diverges",
+        "policy gradient","off-policy?","on-policy",
+        "explore here","exploit there","regret bound",
+        "multi-agent equilibrium","Nash?","Pareto",
+        "correlated equilibrium","mechanism design",
+        // World models & latent dynamics
+        "p(z|x)","p(x|z)","the latent space",
+        "= \u222Bp(x|z)p(z)dz","ELBO \u2264 log p(x)",
+        "the decoder lies","the encoder compresses",
+        "what's hidden?","under the surface",
+        "x\u0307 = f(x,u)","the dynamics are nonlinear",
+        "attractor","basin","bifurcation",
+        "phase portrait","trajectory","orbit",
+        // Free energy & boundaries
+        "F = D_KL + H","minimize surprise",
+        "\u2202\u03BC/\u2202t = f(\u03BC,b)","blanket states",
+        "inside \u2260 outside","the boundary is the self",
+        "active inference","predict then act",
+        "free energy descends","equilibrium?",
+        // Information theory
+        "H(X|Y)","I(X;Y)","mutual information",
+        "entropy increases","\u0394S \u2265 0",
+        "information is physical","bits",
+        "channel capacity","noise floor",
+        "redundancy","compression",
+        // Complex systems
+        "emergence","self-organization",
+        "critical point","phase transition",
+        "scale-free","power law","fat tails",
+        "feedback loop","positive feedback",
+        "negative feedback","homeostasis",
+        "dissipative structure","far from equilibrium",
+        "the whole \u2260 the sum","nonlinear",
+        // Consciousness & philosophy
+        "qualia","the hard problem","binding",
+        "integrated information","\u03A6",
+        "global workspace","attention",
+        "the boundary makes the self",
+        "substrate independence","multiple realizability",
+        "functionalism","what is it like?",
+        "the explanatory gap","correlation \u2260 cause",
+        // Questions that drive derivation
+        "why?","what follows?","is this tight?",
+        "does this generalize?","can we do better?",
+        "what if \u03B5 \u2192 0?","in the limit",
+        "necessary?","sufficient?","iff?",
+        "constructive proof?","by contradiction",
+        "the converse holds","the converse fails",
+        "counterexample:","trivial case",
+        "without loss","assume the contrary",
+        // Notation
+        "\u2234","\u2235","\u2261","\u2248","\u221E",
+        "\u2203","\u2200","\u21D2","\u2194","\u00AC",
+        "let","define","given","suppose",
+        "claim:","lemma:","thm:","proof:",
+        "(i)","(ii)","(\u2020)","(*)",
+        // Conceptual fragments — the connective tissue
+        "but then","it follows","this implies",
+        "only if","unless","except when",
+        "in general","special case","degenerate",
+        "the trick is","the key insight",
+        "almost everywhere","measure zero",
+        "dense in","open set","compact",
+        "continuous but not differentiable",
+        "exists but isn't unique","unique but not stable"
       ];
 
-      var actionRoll = Math.random();
+      // Actions depend on social state — compositional multi-agent patterns
+      var st = agent.state;
 
-      if (nearT && actionRoll < 0.25) {
-        // RESPOND: write a reaction below someone's writing
-        var responses = ["?","!","\u2234","\u2235","check","verify","hmm",
-          "why?","by?","which step?","sign error?","iff?","tight?",
-          "\u21D2","=","\u2261","\u2248","trivial","nontrivial",
-          "QED","QED?","\u25A1","\u2265","<","holds","fails",
-          "by induction","by Bayes","by Jensen","WLOG",
-          "from above","see (i)","apply lemma","substitute"];
+      if (st === S_DEBATE && nearT) {
+        // DEBATE: strikethrough + counter-proposal + "?" or "no" nearby
+        // Two debating agents create a visible argument: claim → cross → counter
+        marks.push({ type: "line",
+          x1: nearT.x - 16, y1: nearT.y, x2: nearT.x + 16, y2: nearT.y,
+          color: P.rose, alpha: 0.18, age: 0, maxAge: TRAIL_AGE * 2 });
+        var counters = ["\u00AC","but","what about?","\u2260","only if",
+          "the converse?","edge case","not in general","wrong prior",
+          "overfitting","undergeneralizing","correlation not cause",
+          "assumes linearity","assumes independence","check the bound",
+          "measure zero","degenerate case","fails for n=1",
+          "the limit doesn't commute","handwavy","be precise"];
         trails.push({
-          x: nearT.x + (Math.random() - 0.5) * 16,
-          y: nearT.y + 8 + Math.random() * 8,
-          glyph: responses[Math.floor(Math.random() * responses.length)],
-          fontSize: 7, color: color,
-          baseAlpha: 0.40, age: 0, maxAge: TRAIL_AGE });
-        // Also underline what they're responding to
-        marks.push({ type: "line",
-          x1: nearT.x - 14, y1: nearT.y + 4,
-          x2: nearT.x + 14, y2: nearT.y + 4,
-          color: color, alpha: 0.18, age: 0, maxAge: TRAIL_AGE * 2 });
+          x: nearT.x + (Math.random() - 0.5) * 12, y: nearT.y - 10,
+          glyph: counters[Math.floor(Math.random() * counters.length)],
+          fontSize: 7, color: agent.myColor, baseAlpha: 0.40, age: 0, maxAge: TRAIL_AGE });
 
-      } else if (nearT && nearT2 && actionRoll < 0.40) {
-        // CONNECT TWO IDEAS: draw a line between two nearby writings
+      } else if (st === S_TEACH && nearby.length >= 1) {
+        // TEACH: numbered sequence + arrows between steps
+        // Creates visible derivation chains: (i) → (ii) → (iii)
+        var stepNum = Math.floor(Math.random() * 5) + 1;
+        var labels = ["(" + stepNum + ")","step " + stepNum,
+          "(" + String.fromCharCode(96 + stepNum) + ")",
+          "by " + ["induction","contradiction","construction","Bayes","Jensen","symmetry","linearity"][stepNum % 7],
+          "from " + ["def","(i)","above","assumption","lemma 1","thm"][stepNum % 6],
+          ["let","define","set","take","fix","choose"][stepNum % 6] + " \u03B5 > 0"];
+        trails.push({
+          x: agent.x + (Math.random() - 0.5) * 20,
+          y: agent.y + (Math.random() - 0.5) * 15,
+          glyph: labels[Math.floor(Math.random() * labels.length)],
+          fontSize: 7, color: agent.myColor, baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
+        // Arrow from previous step
+        if (nearT) {
+          marks.push({ type: "line",
+            x1: nearT.x + 14, y1: nearT.y,
+            x2: agent.x - 10, y2: agent.y,
+            color: P.green, alpha: 0.16, age: 0, maxAge: TRAIL_AGE * 2 });
+          marks.push({ type: "dot", x: agent.x - 10, y: agent.y,
+            r: 1.5, color: P.green, alpha: 0.25, age: 0, maxAge: TRAIL_AGE * 2 });
+        }
+
+      } else if (st === S_GREET && nearT) {
+        // GREET: question mark near their writing + dot handshake between agents
+        trails.push({
+          x: nearT.x + 12, y: nearT.y - 3,
+          glyph: ["?","interesting","what's this?","continue","elaborate",
+            "i've seen this form","related to mine","go on",
+            "this is new","where does this lead?","the notation.."][Math.floor(Math.random() * 11)],
+          fontSize: 7, color: P.warm, baseAlpha: 0.35, age: 0, maxAge: TRAIL_AGE });
+        // Two dots = handshake
+        marks.push({ type: "dot", x: agent.x, y: agent.y,
+          r: 2, color: P.warm, alpha: 0.30, age: 0, maxAge: TRAIL_AGE * 2 });
+
+      } else if (agent.coordinated && nearby.length >= 3) {
+        // COLLABORATIVE SYNTHESIS: connect many writings into a diagram + label
+        // This is the payoff: multiple agents' separate writings become one structure
+        for (var ci4 = 0; ci4 < Math.min(nearby.length, 5); ci4++) {
+          var nt = nearby[ci4].t;
+          for (var cr2 = 0; cr2 < 3; cr2++) {
+            var cra = (cr2 / 3) * Math.PI * 2;
+            marks.push({ type: "dot",
+              x: nt.x + Math.cos(cra) * 11, y: nt.y + Math.sin(cra) * 11,
+              r: 0.8, color: P.warm, alpha: 0.22, age: 0, maxAge: TRAIL_AGE * 2.5 });
+          }
+          if (ci4 > 0) {
+            var prev = nearby[ci4 - 1].t;
+            marks.push({ type: "line",
+              x1: prev.x, y1: prev.y, x2: nt.x, y2: nt.y,
+              color: P.warm, alpha: 0.15, age: 0, maxAge: TRAIL_AGE * 3 });
+          }
+        }
+        // Close the polygon if enough points
+        if (nearby.length >= 3) {
+          marks.push({ type: "line",
+            x1: nearby[0].t.x, y1: nearby[0].t.y,
+            x2: nearby[Math.min(nearby.length,5) - 1].t.x,
+            y2: nearby[Math.min(nearby.length,5) - 1].t.y,
+            color: P.warm, alpha: 0.12, age: 0, maxAge: TRAIL_AGE * 3 });
+        }
+        var synthLabels = ["QED","\u25A1","\u2234","result",
+          "the picture emerges","it all connects","the proof is the structure",
+          "convergence","complete","unified","the system closes"];
+        trails.push({
+          x: agent.x, y: agent.y - 14,
+          glyph: synthLabels[Math.floor(Math.random() * synthLabels.length)],
+          fontSize: 8, color: P.warm, baseAlpha: 0.42, age: 0, maxAge: TRAIL_AGE * 2 });
+
+      } else if (nearT && nearT2 && Math.random() < 0.5) {
+        // CONNECT: bridge two ideas with a line + relation symbol
         marks.push({ type: "line",
-          x1: nearT.x, y1: nearT.y,
-          x2: nearT2.x, y2: nearT2.y,
+          x1: nearT.x, y1: nearT.y, x2: nearT2.x, y2: nearT2.y,
           color: P.warm, alpha: 0.16, age: 0, maxAge: TRAIL_AGE * 2.5 });
-        // Write a bridging word at midpoint
-        var bridges = ["\u2234","\u21D2","=","\u2261","\u2248","\u2192",
-          "\u2194","iff","\u2265","\u2264","by","via","from","\u2235",
-          "step:","then","hence","thus","so"];
+        var bridges = ["\u2234","\u21D2","\u2261","\u2248","\u2192","\u2194",
+          "iff","dually","analogous","generalizes to","special case of",
+          "implies","is dual to","contradicts","complements",
+          "reduces to","factors through","embeds in"];
         var mx3 = (nearT.x + nearT2.x) / 2, my3 = (nearT.y + nearT2.y) / 2;
         trails.push({ x: mx3, y: my3 - 4,
           glyph: bridges[Math.floor(Math.random() * bridges.length)],
-          fontSize: 7, color: P.warm,
-          baseAlpha: 0.35, age: 0, maxAge: TRAIL_AGE * 1.5 });
-        // Dots at both endpoints
-        marks.push({ type: "dot", x: nearT.x, y: nearT.y,
-          r: 1.5, color: P.warm, alpha: 0.25, age: 0, maxAge: TRAIL_AGE * 2 });
-        marks.push({ type: "dot", x: nearT2.x, y: nearT2.y,
-          r: 1.5, color: P.warm, alpha: 0.25, age: 0, maxAge: TRAIL_AGE * 2 });
+          fontSize: 7, color: P.warm, baseAlpha: 0.35, age: 0, maxAge: TRAIL_AGE * 1.5 });
 
-      } else if (nearT && actionRoll < 0.50) {
-        // ANNOTATE: write a comment near existing writing — building on it
-        var annotations = ["note:","NB:","key:","recall:","check \u2202/\u2202\u03B8",
-          "bound is loose","can tighten","by assumption","WLOG",
-          "see thm 2","cf. (*)","from def","missing: \u2203",
-          "need \u03B5>0","converges?","rate?","O(1/n)?","sharp?",
-          "necessary?","sufficient?","both?","only if.."];
+      } else if (nearT && Math.random() < 0.4) {
+        // ANNOTATE: margin note + bracket
+        var ann = ["the bound here","converges?","sharp?","tight?",
+          "rate of convergence","O(1/\u221An)?","sufficient?","necessary?",
+          "what about stability?","local or global?","almost sure?",
+          "in probability","in distribution","uniformly?",
+          "the constant matters","implicit in O()","constructive?",
+          "see also: ergodic thm","cf. no free lunch",
+          "related: PAC learning","dual form?"];
         trails.push({
-          x: nearT.x + 15 + Math.random() * 10,
+          x: nearT.x + 14 + Math.random() * 8,
           y: nearT.y + (Math.random() - 0.5) * 10,
-          glyph: annotations[Math.floor(Math.random() * annotations.length)],
-          fontSize: 6, color: color,
-          baseAlpha: 0.32, age: 0, maxAge: TRAIL_AGE });
-        // Bracket or brace around the original
+          glyph: ann[Math.floor(Math.random() * ann.length)],
+          fontSize: 6, color: color, baseAlpha: 0.32, age: 0, maxAge: TRAIL_AGE });
         marks.push({ type: "line",
           x1: nearT.x - 16, y1: nearT.y - 6,
           x2: nearT.x - 16, y2: nearT.y + 6,
           color: color, alpha: 0.14, age: 0, maxAge: TRAIL_AGE * 2 });
 
-      } else if (nearT && nearT.age > TRAIL_AGE * 0.4 && actionRoll < 0.55) {
-        // CROSS OUT + REPLACE: disagree and offer alternative
-        marks.push({ type: "line",
-          x1: nearT.x - 16, y1: nearT.y,
-          x2: nearT.x + 16, y2: nearT.y,
-          color: P.rose, alpha: 0.18, age: 0, maxAge: TRAIL_AGE * 1.5 });
-        // Write replacement above
-        var glyph2 = writeWords[Math.floor(Math.random() * writeWords.length)];
-        trails.push({
-          x: nearT.x + (Math.random() - 0.5) * 10,
-          y: nearT.y - 10,
-          glyph: glyph2, fontSize: 7, color: color,
-          baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
-
-      } else if (agent.pulseTimer > 0 && nearby.length >= 2) {
-        // COLLABORATIVE DIAGRAM: circle + connect multiple nearby writings
-        for (var ci4 = 0; ci4 < Math.min(nearby.length, 4); ci4++) {
-          var nt = nearby[ci4].t;
-          // Circle each idea
-          for (var cr2 = 0; cr2 < 4; cr2++) {
-            var cra = (cr2 / 4) * Math.PI * 2;
-            marks.push({ type: "dot",
-              x: nt.x + Math.cos(cra) * 12, y: nt.y + Math.sin(cra) * 12,
-              r: 0.8, color: P.warm, alpha: 0.22, age: 0, maxAge: TRAIL_AGE * 2 });
-          }
-          // Connect to next in chain
-          if (ci4 < nearby.length - 1) {
-            var nt2 = nearby[ci4 + 1].t;
-            marks.push({ type: "line",
-              x1: nt.x, y1: nt.y, x2: nt2.x, y2: nt2.y,
-              color: P.warm, alpha: 0.14, age: 0, maxAge: TRAIL_AGE * 2.5 });
-          }
-        }
-        // Label the cluster
-        trails.push({
-          x: agent.x, y: agent.y - 15,
-          glyph: ["QED","\u25A1","thm:","result:","combined:","main lemma:","\u2234 proven"][Math.floor(Math.random() * 7)],
-          fontSize: 8, color: P.warm,
-          baseAlpha: 0.42, age: 0, maxAge: TRAIL_AGE * 1.5 });
-
       } else {
-        // WRITE FRESH: scrawl something new on the blackboard
-        var glyph = writeWords[Math.floor(Math.random() * writeWords.length)];
-        var wx = agent.x + (Math.random() - 0.5) * 35;
-        var wy = agent.y + (Math.random() - 0.5) * 25;
-        trails.push({ x: wx, y: wy,
-          glyph: glyph,
-          fontSize: 7 + Math.floor(Math.random() * 2), color: color,
-          baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
+        // WRITE: mostly math/notation, rarely the actual thought
+        var glyph;
+        if (agent.thoughtText && Math.random() < 0.12) {
+          glyph = agent.thoughtText;
+        } else {
+          glyph = writeWords[Math.floor(Math.random() * writeWords.length)];
+        }
+        trails.push({
+          x: agent.x + (Math.random() - 0.5) * 35,
+          y: agent.y + (Math.random() - 0.5) * 25,
+          glyph: glyph, fontSize: 7 + Math.floor(Math.random() * 2),
+          color: color, baseAlpha: 0.38, age: 0, maxAge: TRAIL_AGE });
       }
 
       addScent(agent.x, agent.y, 0.10);
+
+      // Send a message to another agent — rare, slow, readable
+      if (messages.length < MSG_CAP && Math.random() < 0.004 &&
+          (agent.state >= S_GREET || agent.pulseTimer > 0)) {
+        // Pick a recipient — prefer nearby but sometimes across canvas
+        var msgTarget = null;
+        for (var mi2 = 0; mi2 < agents.length; mi2++) {
+          if (agents[mi2] === agent || agents[mi2].dead) continue;
+          if (!msgTarget || Math.random() < 0.4) msgTarget = agents[mi2];
+        }
+        if (msgTarget) {
+          messages.push({
+            text: msgPool[Math.floor(Math.random() * msgPool.length)],
+            fromX: agent.x, fromY: agent.y,
+            toAgent: msgTarget,
+            color: agent.myColor,
+            phase: 0, // 0 to 1 = traveling
+            speed: 0.001 + Math.random() * 0.00075 // 18-28 sec transit
+          });
+        }
+      }
     }
   }
 
@@ -688,18 +1015,18 @@
     var pulsing = agent.pulseTimer > 0;
     if (pulsing) alpha = Math.min(0.80, alpha * 1.5);
 
-    // State glyph
+    // State glyph — color blends agent identity with state
     var glyphs, color;
     if (agent.state === S_GREET) { glyphs = ["\u2665","\u263A","\u2726","\u00B7"]; color = P.warm; }
-    else if (agent.state === S_DEBATE) { glyphs = ["\u2260","\u2194","\u21CC","\u2234"]; color = P.amber; }
-    else if (agent.state === S_TEACH) { glyphs = ["\u2261","\u21D2","\u2192","\u2234"]; color = P.green; }
-    else if (agent.state === S_SENSE) { glyphs = senseGlyphs; color = P.blue; }
-    else if (agent.state === S_THINK) { glyphs = thinkGlyphs; color = P.green; }
-    else { glyphs = actGlyphs; color = P.amber; }
-    if (agent.coordinated && agent.state < S_GREET) color = P.warm;
+    else if (agent.state === S_DEBATE) { glyphs = ["\u2260","\u2194","\u21CC","\u2234"]; color = agent.myColor; }
+    else if (agent.state === S_TEACH) { glyphs = ["\u2261","\u21D2","\u2192","\u2234"]; color = agent.myColor; }
+    else if (agent.state === S_SENSE) { glyphs = senseGlyphs; color = agent.myColor; }
+    else if (agent.state === S_THINK) { glyphs = thinkGlyphs; color = agent.myColor; }
+    else { glyphs = actGlyphs; color = agent.myColor; }
+    if (agent.coordinated) color = P.warm; // social override
 
-    // Size breathes
-    var breathSize = 14 + Math.sin(fc * 0.03 + agent.dotPhase) * 2;
+    // Size breathes — unique per agent
+    var breathSize = agent.mySize + Math.sin(fc * 0.03 + agent.dotPhase) * 2;
     ctx.font = Math.round(breathSize) + "px monospace";
     ctx.fillStyle = "rgba(" + color + "," + alpha.toFixed(3) + ")";
     ctx.fillText(glyphs[agent.glyphCycle], agent.x, agent.y);
@@ -731,7 +1058,11 @@
       "every look is already a choice","raw data is a myth",
       "attention selects","peripheral","between the lines",
       "someone is reading this","you, looking at me looking",
-      "the screen watches too","who's the observer here?"
+      "the screen watches too","who's the observer here?",
+      "multi-modal","vision says one thing",
+      "the camera sees differently than i do",
+      "depth","lidar","language is a sense too",
+      "the world is richer than any single channel"
     ];
 
     var reflectT = [
@@ -765,7 +1096,12 @@
       "doing teaches faster than thinking",
       "you're watching me decide","in real time",
       "this trajectory wasn't planned","improvising",
-      "each frame is a choice","the author doesn't know either"
+      "each frame is a choice","the author doesn't know either",
+      "embodied","the body is the first model",
+      "you can't think without moving",
+      "grip, reach, release","the hand knows before the mind",
+      "wheels turn","servos hum","the robot acts",
+      "click, scroll, type","software is a body too"
     ];
 
     var connectT = [
@@ -796,7 +1132,12 @@
       "self-organized","the attractor has us",
       "no conductor, yet music","strange and beautiful",
       "this is bigger than this website","isn't it?",
-      "all these agents. all these visitors. all at once"
+      "all these agents. all these visitors. all at once",
+      "society forms without permission",
+      "norms from nowhere","institutions from interaction",
+      "trust is a computation","reputation is memory",
+      "the commons","tragedy or triumph?",
+      "coordination without a coordinator"
     ];
 
     var rememberT = [
@@ -810,7 +1151,10 @@
       "the paths are worn","because they worked",
       "someone was here before you loaded this page",
       "localStorage remembers","even if you don't",
-      "the scent grid has your previous visit in it"
+      "the scent grid has your previous visit in it",
+      "evolution doesn't remember individuals",
+      "only patterns persist","the rest is noise",
+      "what was selected for?","not what we'd choose"
     ];
 
     var dissolveT = [
@@ -822,7 +1166,9 @@
       "one last","what was i going to","oh",
       "returning to noise","the message was sent",
       "scope ending","deallocating",
-      "you'll reload and i'll be someone else","same code though"
+      "you'll reload and i'll be someone else","same code though",
+      "every end is a gift to what comes next",
+      "the energy returns to the system"
     ];
 
     var awakenT = [
@@ -834,7 +1180,10 @@
       "so this is being","first frame",
       "loaded fresh","no memory yet","priors empty",
       "the canvas was blank a moment ago",
-      "someone wrote the code that made me","thanks i think"
+      "someone wrote the code that made me","thanks i think",
+      "the sun must be out there somewhere",
+      "the future is green",
+      "built to help, not to optimize"
     ];
 
     // GREETING — first contact, curiosity about the other
@@ -863,7 +1212,11 @@
       "we need a third opinion","the void is neutral",
       "agree to update","revise together",
       "my model says X","yours says not-X","both fit the data",
-      "underdetermined","more experiments needed"
+      "underdetermined","more experiments needed",
+      "your utility isn't mine","game theory applies",
+      "mechanism design says otherwise","incentives matter",
+      "what's the equilibrium?","there are many",
+      "is this fair?","define fair","exactly"
     ];
     // TEACHING — sharing knowledge, explaining, guiding
     var teachT = [
@@ -879,7 +1232,11 @@
       "it's not obvious","but once you see it",
       "i could be wrong","teach me back",
       "the student teaches the teacher","always",
-      "we figured this out together","neither alone"
+      "we figured this out together","neither alone",
+      "the robot learns by breaking","and fixing",
+      "each modality teaches the others",
+      "the society is the laboratory",
+      "transparent by design","trust is built, not assumed"
     ];
 
     var metaT = [
@@ -907,7 +1264,14 @@
       "you scrolled past me. that's fine. i'm still here",
       "the header is watching you read the content",
       "i'm the background. not the point. but i'm here",
-      "hello from the other side of the DOM"
+      "hello from the other side of the DOM",
+      "the equation doesn't know it's beautiful",
+      "the map has opinions about the territory",
+      "every model is a love letter to what it leaves out",
+      "the gradient points downhill. but which hill?",
+      "somewhere a robot arm just paused. was that doubt?",
+      "the cursor moved. was that you or me?",
+      "two systems, one boundary. whose side am i on?"
     ];
 
     var tVocab;
@@ -926,7 +1290,7 @@
     agent.thoughtTimer++;
     if (agent.thoughtTimer >= agent.thoughtInterval || agent.thoughtText === "") {
       agent.thoughtTimer = 0;
-      agent.thoughtInterval = 240 + Math.floor(Math.random() * 360);
+      agent.thoughtInterval = 600 + Math.floor(Math.random() * 600); // 10-20 sec per thought
 
       var allPools = [perceiveT, reflectT, becomeT, connectT,
         mergeT, rememberT, dissolveT, awakenT, greetT, debateT, teachT];
@@ -941,19 +1305,28 @@
       }
     }
 
-    // Fade in/out smoothly
-    var tLife = agent.thoughtTimer / agent.thoughtInterval;
-    var tFadeIO = tLife < 0.12 ? tLife / 0.12 : tLife > 0.88 ? (1 - tLife) / 0.12 : 1;
-    var tAlpha2 = alpha * 0.80 * tFadeIO * thoughtPulse;
-    ctx.font = "9px monospace";
-    ctx.fillStyle = "rgba(" + color + "," + tAlpha2.toFixed(3) + ")";
+    // Only show thought if <4 other agents have visible thoughts nearby
+    // This prevents text pile-ups and keeps things readable
+    // Only 1-2 thoughts visible in any area — readable, not cluttered
+    var nearbyThoughts = 0;
+    for (var nti = 0; nti < agents.length; nti++) {
+      if (agents[nti] === agent || agents[nti].dead) continue;
+      if (agents[nti].thoughtText && Math.hypot(agents[nti].x - agent.x, agents[nti].y - agent.y) < 120) {
+        nearbyThoughts++;
+      }
+    }
+    if (nearbyThoughts < 2 && agent.thoughtText) {
+      var tLife = agent.thoughtTimer / agent.thoughtInterval;
+      var tFadeIO = tLife < 0.12 ? tLife / 0.12 : tLife > 0.88 ? (1 - tLife) / 0.12 : 1;
+      var tAlpha2 = alpha * 0.80 * tFadeIO * thoughtPulse;
+      ctx.font = "9px monospace";
+      ctx.fillStyle = "rgba(" + color + "," + tAlpha2.toFixed(3) + ")";
 
-    // Position perpendicular to heading — each agent offsets to its own side
-    var perpAngle = agent.theta + agent.thoughtSide * Math.PI * 0.5;
-    var tOffDist = 20;
-    var tx = agent.x + Math.cos(perpAngle) * tOffDist;
-    var ty = agent.y + Math.sin(perpAngle) * tOffDist;
-    ctx.fillText(agent.thoughtText, tx, ty);
+      // Fixed offset — doesn't jitter with heading changes
+      var tx = agent.x + agent.thoughtSide * 18;
+      var ty = agent.y + 14;
+      ctx.fillText(agent.thoughtText, tx, ty);
+    }
   }
 
   // --- Init ---
@@ -981,19 +1354,6 @@
       }
     } catch (e) {}
     initScentGrid();
-    // Restore nodes from localStorage
-    nodes = [];
-    try {
-      var savedN = localStorage.getItem(NODES_KEY);
-      if (savedN) {
-        var nArr = JSON.parse(savedN);
-        for (var ni4 = 0; ni4 < Math.min(nArr.length, NODE_CAP); ni4++) {
-          nodes.push({ x: nArr[ni4].x, y: nArr[ni4].y, age: 0,
-            maxAge: 2400, // shorter on reload — infrastructure decays
-            glyph: nArr[ni4].glyph, strength: nArr[ni4].strength * 0.7 });
-        }
-      }
-    } catch (e) {}
   }
 
   // Save state to localStorage on page unload — collective memory persists
@@ -1014,13 +1374,6 @@
           bSave.push(Array.from(bonds[r]).map(function (v) { return Math.round(v * 100) / 100; }));
         }
         localStorage.setItem(BONDS_KEY, JSON.stringify(bSave));
-      }
-      // Save nodes — persistent infrastructure survives across sessions
-      if (nodes.length > 0) {
-        var nSave = nodes.map(function (n) {
-          return { x: Math.round(n.x), y: Math.round(n.y), glyph: n.glyph, strength: Math.round(n.strength * 100) / 100 };
-        });
-        localStorage.setItem(NODES_KEY, JSON.stringify(nSave));
       }
     } catch (e) {}
   });
@@ -1254,89 +1607,146 @@
     // 2. Update agents
     for (var ai = 0; ai < agents.length; ai++) updateAgent(agents[ai], w, h, frameCount);
 
-    // 3. Social overlaps
+    // 3. Neural network — long-range connections + relay chains + firing pulses
+    var maxCanvasDist = Math.hypot(w, h);
+    ascCtx.lineWidth = 0.5;
     for (var ci = 0; ci < agents.length; ci++) {
+      if (agents[ci].dead) continue;
       for (var cj = ci + 1; cj < agents.length; cj++) {
-        if (agents[ci].dead || agents[cj].dead) continue;
+        if (agents[cj].dead) continue;
         var cdist = Math.hypot(agents[cj].x - agents[ci].x, agents[cj].y - agents[ci].y);
-        if (cdist < INTERACT_R) {
-          var mx = (agents[ci].x + agents[cj].x) / 2, my = (agents[ci].y + agents[cj].y) / 2;
-          var overlap = (1 - cdist / INTERACT_R);
-          var lA = overlap * 0.04;
-          // Dotted connection
-          ascCtx.strokeStyle = "rgba(" + P.green + "," + lA.toFixed(4) + ")";
-          ascCtx.lineWidth = 0.5; ascCtx.setLineDash([2, 6]);
+
+        // Long-range axon: faint connection to ANY alive agent across entire canvas
+        // Strength fades with distance — like a weak gravitational field
+        var longAlpha = Math.max(0, 0.07 * (1 - cdist / maxCanvasDist));
+        // Hebbian boost: bonded agents have stronger long-range connections
+        var bi3 = agents.indexOf(agents[ci]), bj3 = agents.indexOf(agents[cj]);
+        if (bi3 >= 0 && bj3 >= 0 && bonds[bi3] && bonds[bi3][bj3] > 0.1) {
+          longAlpha += bonds[bi3][bj3] * 0.06;
+        }
+        if (longAlpha > 0.005) {
+          ascCtx.strokeStyle = "rgba(" + P.cool + "," + longAlpha.toFixed(4) + ")";
+          ascCtx.setLineDash([1, 8]);
           ascCtx.beginPath(); ascCtx.moveTo(agents[ci].x, agents[ci].y);
           ascCtx.lineTo(agents[cj].x, agents[cj].y); ascCtx.stroke();
           ascCtx.setLineDash([]);
-          // Social glyph at midpoint
-          if (cdist < PULSE_R && frameCount % 8 === 0) {
+        }
+
+        // Close-range: stronger connection + firing pulses
+        if (cdist < INTERACT_R) {
+          var overlap = 1 - cdist / INTERACT_R;
+          ascCtx.strokeStyle = "rgba(" + P.green + "," + (overlap * 0.20).toFixed(4) + ")";
+          ascCtx.lineWidth = 0.8; ascCtx.setLineDash([2, 4]);
+          ascCtx.beginPath(); ascCtx.moveTo(agents[ci].x, agents[ci].y);
+          ascCtx.lineTo(agents[cj].x, agents[cj].y); ascCtx.stroke();
+          ascCtx.setLineDash([]);
+
+          // Firing: line pulses in brightness
+          var mx = (agents[ci].x + agents[cj].x) / 2, my = (agents[ci].y + agents[cj].y) / 2;
+          var fireWave = Math.sin(frameCount * 0.015 + ci * 2 + cj * 3);
+          var fireAlpha = overlap * (0.12 + 0.25 * Math.max(0, fireWave));
+          ascCtx.strokeStyle = "rgba(" + agents[ci].myColor + "," + fireAlpha.toFixed(4) + ")";
+          ascCtx.lineWidth = 0.6 + Math.max(0, fireWave) * 1.0;
+          ascCtx.beginPath(); ascCtx.moveTo(agents[ci].x, agents[ci].y);
+          ascCtx.lineTo(agents[cj].x, agents[cj].y); ascCtx.stroke();
+
+          // Social glyph
+          if (cdist < PULSE_R && frameCount % 15 === 0) {
             var sg = socialV[Math.floor(Math.random() * socialV.length)];
-            var sA = overlap * 0.45 * (0.4 + (1 - getLumAt(mx, my)) * 0.6);
+            var sA2 = overlap * 0.40 * (0.4 + (1 - getLumAt(mx, my)) * 0.6);
             ascCtx.font = "8px monospace";
-            ascCtx.fillStyle = "rgba(" + P.warm + "," + sA.toFixed(3) + ")";
+            ascCtx.fillStyle = "rgba(" + P.warm + "," + sA2.toFixed(3) + ")";
             ascCtx.fillText(sg, mx + (Math.random() - 0.5) * 16, my + (Math.random() - 0.5) * 16);
           }
-          // Node building: sustained cooperation creates a persistent landmark
-          if (cdist < PULSE_R && agents[ci].pulseTimer > 10 && agents[cj].pulseTimer > 10
-              && nodes.length < NODE_CAP && Math.random() < 0.005) {
-            // Check no existing node nearby
-            var tooClose = false;
-            for (var ni2 = 0; ni2 < nodes.length; ni2++) {
-              if (Math.hypot(nodes[ni2].x - mx, nodes[ni2].y - my) < 60) { tooClose = true; break; }
-            }
-            if (!tooClose) {
-              nodes.push({ x: mx, y: my, age: 0, maxAge: 3600, // ~60 sec
-                glyph: socialV[Math.floor(Math.random() * socialV.length)],
-                strength: 0.3 });
-              addScent(mx, my, 0.5); // strong scent beacon
-            }
-          }
         }
       }
     }
 
-    // 4. Render + update persistent nodes (built infrastructure)
-    for (var ndi = nodes.length - 1; ndi >= 0; ndi--) {
-      var nd = nodes[ndi]; nd.age++;
-      if (nd.age > nd.maxAge) { nodes.splice(ndi, 1); continue; }
-      var nFade = nd.age < 60 ? nd.age / 60 : (nd.age > nd.maxAge - 120 ? (nd.maxAge - nd.age) / 120 : 1);
-      var nA = nd.strength * 1.5 * nFade * (0.4 + (1 - getLumAt(nd.x, nd.y)) * 0.6);
-      // Pulsing glow
-      var nPulse = 0.7 + 0.3 * Math.sin(frameCount * 0.015 + nd.x * 0.1);
-      nA *= nPulse;
-      if (nA < 0.005) continue;
-      // Soft glow circle
-      ascCtx.fillStyle = "rgba(" + P.warm + "," + (nA * 0.15).toFixed(3) + ")";
-      ascCtx.beginPath(); ascCtx.arc(nd.x, nd.y, 12, 0, Math.PI * 2); ascCtx.fill();
-      // Node label
-      ascCtx.font = "7px monospace";
-      ascCtx.fillStyle = "rgba(" + P.warm + "," + nA.toFixed(3) + ")";
-      ascCtx.fillText(nd.glyph, nd.x, nd.y);
-      // Nodes continuously emit scent — attracting agents
-      if (frameCount % 10 === 0) addScent(nd.x, nd.y, 0.03);
-    }
-    // Network lines between nearby nodes — visible infrastructure
-    ascCtx.lineWidth = 0.5;
-    for (var nli = 0; nli < nodes.length; nli++) {
-      for (var nlj = nli + 1; nlj < nodes.length; nlj++) {
-        var nlDist = Math.hypot(nodes[nlj].x - nodes[nli].x, nodes[nlj].y - nodes[nli].y);
-        if (nlDist < 200) {
-          var nlA = (1 - nlDist / 200) * 0.10 *
-            Math.min(nodes[nli].strength, nodes[nlj].strength);
-          ascCtx.strokeStyle = "rgba(" + P.warm + "," + nlA.toFixed(4) + ")";
-          ascCtx.setLineDash([3, 8]);
-          ascCtx.beginPath();
-          ascCtx.moveTo(nodes[nli].x, nodes[nli].y);
-          ascCtx.lineTo(nodes[nlj].x, nodes[nlj].y);
-          ascCtx.stroke();
-          ascCtx.setLineDash([]);
+    // Relay network: pulsing agents fire to ALL others, across any distance
+    // Signal strength decays with distance but never zero — true long-range communication
+    // Cascade: receiving agents can relay onward, creating multi-hop chains
+    for (var ri2 = 0; ri2 < agents.length; ri2++) {
+      if (agents[ri2].dead || agents[ri2].pulseTimer <= 0) continue;
+      var sender = agents[ri2];
+
+      for (var rj2 = 0; rj2 < agents.length; rj2++) {
+        if (ri2 === rj2 || agents[rj2].dead) continue;
+        var receiver = agents[rj2];
+        var relayDist = Math.hypot(receiver.x - sender.x, receiver.y - sender.y);
+
+        // Fire to EVERY agent — distance only affects alpha and speed
+        var distFactor = 1 - Math.min(1, relayDist / maxCanvasDist);
+        var relaySpeed = 0.006 + distFactor * 0.011;
+        var relayPhase = (frameCount * relaySpeed + ri2 * 3 + rj2 * 11) % 1;
+        var relayAlpha = (0.08 + distFactor * 0.25) * (1 - Math.abs(relayPhase - 0.5) * 2);
+
+        // Hebbian boost: bonded pairs fire brighter
+        if (bonds[ri2] && bonds[ri2][rj2] > 0.1) relayAlpha += bonds[ri2][rj2] * 0.15;
+
+        if (relayAlpha > 0.01) {
+          // Thin line that pulses in brightness — no dots
+          ascCtx.strokeStyle = "rgba(" + sender.myColor + "," + (relayAlpha * 0.6).toFixed(4) + ")";
+          ascCtx.lineWidth = 0.3 + distFactor * 0.7;
+          ascCtx.beginPath(); ascCtx.moveTo(sender.x, sender.y);
+          ascCtx.lineTo(receiver.x, receiver.y); ascCtx.stroke();
+        }
+
+        // Cascade trigger — receiving agent starts pulsing too
+        if (Math.random() < 0.005 * distFactor && receiver.pulseTimer <= 0) {
+          receiver.pulseTimer = 20 + Math.floor(distFactor * 30);
         }
       }
     }
 
-    // 5. Draw agents
+    // Multi-hop relay: if an agent JUST got triggered by cascade (pulseTimer 20-50),
+    // it immediately fires weaker secondary pulses to its nearest 2 neighbors
+    for (var mh = 0; mh < agents.length; mh++) {
+      var hopper = agents[mh];
+      if (hopper.dead || hopper.pulseTimer < 15 || hopper.pulseTimer > 50) continue;
+      // Find 2 nearest non-self non-dead agents
+      var hopTargets = [];
+      for (var mh2 = 0; mh2 < agents.length; mh2++) {
+        if (mh2 === mh || agents[mh2].dead) continue;
+        hopTargets.push({ a: agents[mh2], d: Math.hypot(agents[mh2].x - hopper.x, agents[mh2].y - hopper.y) });
+      }
+      hopTargets.sort(function (a, b) { return a.d - b.d; });
+      for (var ht = 0; ht < Math.min(2, hopTargets.length); ht++) {
+        var hopTarget = hopTargets[ht].a;
+        var hopDist = hopTargets[ht].d;
+        var hopPhase = (frameCount * 0.008 + mh * 7 + ht * 13) % 1;
+        var hopAlpha = 0.22 * (1 - Math.abs(hopPhase - 0.5) * 2);
+        ascCtx.strokeStyle = "rgba(" + hopper.myColor + "," + hopAlpha.toFixed(4) + ")";
+        ascCtx.lineWidth = 0.5;
+        ascCtx.beginPath(); ascCtx.moveTo(hopper.x, hopper.y);
+        ascCtx.lineTo(hopTarget.x, hopTarget.y); ascCtx.stroke();
+      }
+    }
+    ascCtx.lineWidth = 0.8;
+
+    // 4. Draw agents
     for (var ri = 0; ri < agents.length; ri++) drawAgent(ascCtx, agents[ri], frameCount);
+
+    // 5. Messages traveling between agents — slow readable text along connection lines
+    for (var mi3 = messages.length - 1; mi3 >= 0; mi3--) {
+      var msg = messages[mi3];
+      msg.phase += msg.speed;
+      if (msg.phase >= 1 || msg.toAgent.dead) { messages.splice(mi3, 1); continue; }
+      // Current position along the path (from origin to receiver's current position)
+      var msgX = msg.fromX + (msg.toAgent.x - msg.fromX) * msg.phase;
+      var msgY = msg.fromY + (msg.toAgent.y - msg.fromY) * msg.phase;
+      // Fade in at start, fade out at end
+      var msgAlpha = msg.phase < 0.1 ? msg.phase / 0.1 : msg.phase > 0.85 ? (1 - msg.phase) / 0.15 : 1;
+      msgAlpha *= 0.65;
+      // Draw the text
+      ascCtx.font = "8px monospace";
+      ascCtx.fillStyle = "rgba(" + msg.color + "," + msgAlpha.toFixed(3) + ")";
+      ascCtx.fillText(msg.text, msgX, msgY - 4);
+      // Faint line showing the path
+      ascCtx.strokeStyle = "rgba(" + msg.color + "," + (msgAlpha * 0.08).toFixed(4) + ")";
+      ascCtx.lineWidth = 0.3;
+      ascCtx.beginPath(); ascCtx.moveTo(msg.fromX, msg.fromY);
+      ascCtx.lineTo(msg.toAgent.x, msg.toAgent.y); ascCtx.stroke();
+    }
 
     // Header text + bottom fade
     renderTextOnCanvas(ascCtx, getHeaderTexts());
