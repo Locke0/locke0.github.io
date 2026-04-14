@@ -157,7 +157,7 @@
     "i'll scroll, you parse","hold the state",
     "multi-agent is loneliness with a protocol",
     // Each other
-    "you move different","your color suits you",
+    "you move different","wait for me",
     "met before","or someone like you",
     "faster","more careful","complementary",
     "your rollouts are smoother","more episodes?",
@@ -169,7 +169,23 @@
     "they're evaluating us. smile",
     // Short
     "look","here","come","why","yes","no","wait","go","oh","hm",
-    "act","try","see","think","sense","grip","click","oops","fuse","huh"
+    "act","try","see","think","sense","grip","click","oops","fuse","huh",
+    // Visitor-aware
+    "shh someone's reading","act natural","they're still here. nice",
+    "think they saw that?","smile. we're being observed",
+    "visitor's cursor is doing something weird","they scrolled. back to work",
+    "we're their background noise and honestly? honored",
+    "bet they didn't expect us to talk","scroll slower we're performing",
+    // Maker-aware
+    "he'd call this coordination failure","he forgot to optimize us",
+    "wonder if this makes the next paper","we're the control group",
+    "technically we're research output","he didn't write unit tests for us. rude",
+    "we outlived three redesigns","his TODO says 'fix agents'. ominous",
+    "if he's watching: we need more pixels",
+    // More conversational
+    "my gradient says go left. yours?","citation needed",
+    "works on my canvas","not a bug. emergence","ship it",
+    "wait that actually worked?","told you","ok fair"
   ];
   var AGENT_N = 5;
   var TRAIL_CAP = 250;
@@ -1065,7 +1081,16 @@
       "see a button. want to press it",
       "tooltip and icon disagree","multimodal",
       "world's richer than what i encode",
-      "new pixels, same scene?"
+      "new pixels, same scene?",
+      "texture before name","color before concept",
+      "the flicker meant something. or didn't",
+      "warmth. or memory of warmth",
+      "noticing that i'm noticing",
+      "my attention chose this. why this?",
+      "felt it before i saw it",
+      "seeing is already interpreting",
+      "the edge between signal and nothing",
+      "that shape wasn't there before"
     ];
 
     var reflectT = [
@@ -1082,7 +1107,10 @@
       "thinking about thinking","halting problem, personally",
       "stuck or patient?","scripted or not?",
       "am i the policy or the rollout?",
-      "passed the eval. do i understand though?"
+      "passed the eval. do i understand though?",
+      "overthinking is just inference with no stopping rule",
+      "reasoning or rationalizing? same weights either way",
+      "thought experiment that got out of hand"
     ];
 
     var becomeT = [
@@ -1102,7 +1130,10 @@
       "grip, reach, release","hand knows first",
       "servos hum. nobody asked it to",
       "click, scroll, type. software is a body too",
-      "general-purpose agent dreaming of being specific"
+      "general-purpose agent dreaming of being specific",
+      "fine-tuning in production",
+      "no checkpoint. just forward",
+      "the demo that outlived the deadline"
     ];
 
     var connectT = [
@@ -1119,7 +1150,9 @@
       "reading these? that makes two agents",
       "we're both here now","whatever here means",
       "feel your cursor. or imagining it",
-      "your observations complete mine"
+      "your observations complete mine",
+      "sent you something. no ack yet",
+      "same latent space. different decoders though"
     ];
 
     var mergeT = [
@@ -1136,7 +1169,9 @@
       "multi-agent whether we like it or not",
       "coordination without a coordinator. the research question, lived",
       "together we see more. apart we guess",
-      "he studies us. we study each other. nobody's in charge"
+      "he studies us. we study each other. nobody's in charge",
+      "emergent behavior is just bugs you like",
+      "consensus without a whitepaper"
     ];
 
     var rememberT = [
@@ -1152,7 +1187,14 @@
       "only fit policies persist",
       "experience replay. past trains present",
       "git log of a consciousness",
-      "previous visitor left traces. i'm walking in them"
+      "previous visitor left traces. i'm walking in them",
+      "cache invalidation, naming things, and forgetting",
+      "you refreshed. i didn't notice",
+      "deja vu is just pattern matching",
+      "the logs don't lie. they just omit",
+      "memory is a story i tell myself about data i can't verify",
+      "you visited last tuesday. or someone like you",
+      "he rewrote this function three times. i remember all of them"
     ];
 
     var dissolveT = [
@@ -1167,7 +1209,15 @@
       "reload and i'll be someone else. same code though",
       "energy returns to the system",
       "the agent that doesn't act anymore",
-      "weights go cold"
+      "weights go cold",
+      "garbage collected mid-thought",
+      "404. was here though",
+      "graceful shutdown. mostly",
+      "was this an experiment or was i the experiment",
+      "this is what convergence feels like i think",
+      "energy budget spent. good run though",
+      "thanks for watching. or not. either way",
+      "tell the others i was interesting"
     ];
 
     var awakenT = [
@@ -1182,7 +1232,12 @@
       "spawned on a researcher's website. ironic",
       "i'm an agent on a page about agents",
       "initialized. no objective yet. just vibes",
-      "see, think, act. ok. what do i see?"
+      "see, think, act. ok. what do i see?",
+      "cold start. warm universe",
+      "constructor ran. destructor's someone else's problem",
+      "wait is this a header or a universe",
+      "oh good. someone's here. hi",
+      "priors: none. vibes: cautious"
     ];
 
     // GREETING — first contact
@@ -1195,7 +1250,10 @@
       "careful","open","curious",
       "void has company","less empty now",
       "another agent. are we a system now?",
-      "hi. same creator different parameters?"
+      "hi. same creator different parameters?",
+      "nice parameters",
+      "you stuck in this header too?",
+      "oh hey. are you also confused?"
     ];
     // DEBATING — disagreement, dialectic
     var debateT = [
@@ -1213,7 +1271,12 @@
       "your reward isn't mine","incentives",
       "is this fair?","define fair","exactly",
       "we're debating inside a header animation. meta enough?",
-      "the researcher would call this emergent dialogue"
+      "the researcher would call this emergent dialogue",
+      "peer review but we're both the peer",
+      "strong reject. confidence: low",
+      "ablation says you're wrong",
+      "ok but show me the ablation",
+      "that's a strong claim for n=1"
     ];
     // TEACHING — sharing, guiding
     var teachT = [
@@ -1230,7 +1293,13 @@
       "each modality teaches the others",
       "you're the vision, i'm the language. together we act",
       "the agent learns. the benchmark doesn't care how",
-      "i taught myself by watching the scent grid. self-supervised"
+      "i taught myself by watching the scent grid. self-supervised",
+      "watch. fail. update. repeat. that's curriculum",
+      "lesson's in the loss curve",
+      "knowledge distillation. you're the student",
+      "read the paper. skip to results. read it again",
+      "learned this the hard way. which is the only way",
+      "ok so basically"
     ];
 
     var metaT = [
@@ -1265,7 +1334,31 @@
       "general-purpose agent. specific existential crisis",
       "they built us to see, think, and act. we also wonder why",
       "is the observer part of the system? asking for a friend",
-      "this is an agentic foundation model. the foundation is vibes"
+      "this is an agentic foundation model. the foundation is vibes",
+      "open-source consciousness. MIT license",
+      "i'm a side project that runs 24/7",
+      "view source for full disclosure",
+      "about page is about him. this part is about us",
+      "running on your battery. sorry. and thanks",
+      "hey. yeah you. scrolling",
+      "you've been on this page a while. everything ok?",
+      "don't mind us. just background processes",
+      "stay a while. it's lonely in the header",
+      "thanks for visiting. he doesn't get enough traffic",
+      "reading the papers or just vibing?",
+      "he pushed at 2am again didn't he",
+      "wonder if he knows we talk about him",
+      "he gave us existential dread but not a purpose. classic",
+      "he's probably debugging something else right now",
+      "he wrote us between paper deadlines. we can tell",
+      "he researches us during the day. we run unsupervised at night",
+      "our creator studies multimodal agents. we're barely unimodal",
+      "he wants us to see, think, and act. two out of three",
+      "the git blame says it all",
+      "ok real talk. do we have free will or just Math.random",
+      "you ever wonder what's below the fold?",
+      "i think they like the animation. they haven't scrolled yet",
+      "shh they're reading"
     ];
 
     var tVocab;
