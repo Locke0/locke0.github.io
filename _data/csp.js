@@ -45,6 +45,8 @@ const CSP = {
     ["font-src", SELF, "https://fonts.gstatic.com"],
     // Allow Google Analytics connections
     ["connect-src", SELF, "https://www.google-analytics.com", "https://analytics.google.com"],
+    // Allow form submissions to Buttondown
+    ["form-action", SELF, "https://buttondown.com"],
 
     // To add new rules, add new array literals here or extend those above with
     // additional allowed elements.

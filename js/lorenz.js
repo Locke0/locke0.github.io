@@ -224,7 +224,7 @@
     "if he's watching: we need more pixels",
     // More conversational
     "my gradient says go left. yours?","citation needed",
-    "works on my canvas","not a bug. emergence","ship it",
+    "works on my machine","not a bug. emergence","ship it",
     "wait that actually worked?","told you","ok fair",
     // Vibe-coded
     "vibe coded. no tests. pure vibes","he vibed us into existence",

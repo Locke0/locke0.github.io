@@ -31,6 +31,8 @@
     <meta name="twitter:creator" content="@{{ metadata.author.twitterHandle }}">
     {% if image %}
       <meta property="og:image" content="{{ image | url | absoluteUrl(metadata.url) }}">
+    {% else %}
+      <meta property="og:image" content="{{ metadata.url }}/img/og/default.png">
     {% endif %}
 
     <link rel="canonical" href="{{ metadata.url }}{{ canonicalUrl or page.url }}">
@@ -107,7 +109,7 @@
 
     <footer>
       {% block footer %}
-        <p class="subscribe-line">Subscribe: <a href="{{ metadata.feed.path | url }}">RSS</a> | <a href="https://buttondown.com/lockelol">Email</a> | <a href="https://x.com/{{ metadata.author.twitterHandle }}">X: @{{ metadata.author.twitterHandle }}</a></p>
+        <p class="subscribe-line"><a href="{{ metadata.feed.path | url }}">rss</a> | <a href="/subscribe/">subscribe</a> | <a href="https://x.com/{{ metadata.author.twitterHandle }}">x</a></p>
         <span>&copy; 2025 {{ metadata.author.name }}</span>
       {% endblock %}
     </footer>

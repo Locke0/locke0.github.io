@@ -1053,3 +1053,90 @@ hr::after {
   font-size: 0.9rem;
   color: var(--text-subtle);
 }
+
+/* ========================================
+   Subscribe / Interest Form
+   ======================================== */
+.subscribe-page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 2em 0;
+}
+
+.subscribe-page h2 {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--link);
+}
+.subscribe-page h2::before {
+  content: "~/";
+  color: var(--text-subtle);
+  opacity: 0.5;
+}
+
+.subscribe-desc {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-subtle);
+  margin-bottom: 2em;
+}
+
+.interest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.form-field label,
+.form-field legend {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+}
+
+.form-field input[type="email"],
+.form-field input[type="text"] {
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.6em 0.8em;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border-radius: 2px;
+  max-width: 400px;
+  transition: border-color 0.15s ease;
+}
+
+.form-field input[type="email"]:focus,
+.form-field input[type="text"]:focus {
+  outline: none;
+  border-color: var(--link);
+}
+
+.form-field input::placeholder {
+  color: var(--text-subtle);
+  opacity: 0.5;
+}
+
+.interest-form button[type="submit"] {
+  align-self: flex-start;
+  margin-top: 0.5em;
+  background: transparent;
+  color: var(--text-subtle);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  padding: 0.4em 1em;
+}
+
+.interest-form button[type="submit"]:hover {
+  background: transparent;
+  color: var(--link);
+  border-color: var(--link);
+}

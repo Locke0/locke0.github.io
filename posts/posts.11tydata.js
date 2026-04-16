@@ -18,15 +18,17 @@ module.exports = () => {
   return {
     eleventyComputed: {
       eleventyExcludeFromCollections: (data) => {
-        // If post should be shown, don't exclude it
-        // If post should be hidden, exclude it
         return showDraft(data) ? false : true;
       },
       permalink: (data) => {
-        // If post should be hidden, don't generate a page
-        // If shown, return undefined to use Eleventy's default permalink
         if (!showDraft(data)) return false;
         return data.permalink;
+      },
+      image: (data) => {
+        if (data.image) return data.image;
+        const slug = data.page && data.page.fileSlug;
+        if (slug) return `/img/og/${slug}.png`;
+        return "/img/og/default.png";
       },
     },
     tags: ["posts"],
