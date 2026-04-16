@@ -92,6 +92,7 @@
   var scentGrid = null;
   var baseCanvas = null;
 
+
   // ===== Mood epochs — global atmospheric drift =====
   var EPOCHS = {
     quiet:    { speedMul: 0.7, turnMul: 0.6, socialSeek: 0.15, msgRate: 0.002, interactR: 100, trailAlpha: 0.28, breathAmp: 1.0 },
@@ -345,7 +346,8 @@
   header.addEventListener("mouseleave", function () { isHovering = false; mouseX = mouseY = -1; });
   header.addEventListener("mousemove", function (e) {
     var r = header.getBoundingClientRect();
-    mouseX = e.clientX - r.left; mouseY = e.clientY - r.top; startAnim();
+    mouseX = e.clientX - r.left; mouseY = e.clientY - r.top;
+    startAnim();
   });
   header.addEventListener("touchstart", function (e) {
     var t = e.touches[0], r = header.getBoundingClientRect();
@@ -358,7 +360,47 @@
   }, { passive: true });
   header.addEventListener("touchend", function () { isTouching = false; touchFadeTimer = 120; });
   header.addEventListener("touchcancel", function () { isTouching = false; touchFadeTimer = 120; });
-  header.addEventListener("click", function () { paused = !paused; });
+  header.addEventListener("click", function (e) {
+    paused = !paused;
+    var rect = header.getBoundingClientRect();
+    var ripple = document.createElement("div");
+    var rx = e.clientX - rect.left;
+    var ry = e.clientY - rect.top;
+    spawnRipple(rx, ry);
+  });
+
+  var holdInterval = null;
+  var holdX = 0, holdY = 0;
+  header.addEventListener("mousedown", function (e) {
+    var rect = header.getBoundingClientRect();
+    holdX = e.clientX - rect.left;
+    holdY = e.clientY - rect.top;
+    holdInterval = setInterval(function () { spawnRipple(holdX, holdY); }, 600);
+  });
+  header.addEventListener("mouseup", function () { clearInterval(holdInterval); holdInterval = null; });
+  header.addEventListener("mouseleave", function () { clearInterval(holdInterval); holdInterval = null; });
+
+  function spawnRipple(x, y) {
+    var color = "114,222,194";
+    var wobble = Math.floor(Math.random() * 4);
+    var wobbles = [
+      "42% 58% 55% 45% / 58% 42% 55% 45%",
+      "57% 43% 44% 56% / 45% 57% 43% 55%",
+      "45% 55% 58% 42% / 55% 43% 57% 45%",
+      "55% 45% 42% 58% / 43% 55% 45% 57%"
+    ];
+    var r = document.createElement("div");
+    var duration = 5 + Math.random() * 2;
+    r.style.cssText = "position:absolute;border-radius:50%;pointer-events:none;z-index:10;" +
+      "border:1px solid rgba(" + color + ",0.4);" +
+      "box-shadow:0 0 6px rgba(" + color + ",0.08);" +
+      "width:0;height:0;transform:translate(-50%,-50%);" +
+      "left:" + x + "px;top:" + y + "px;" +
+      "animation:header-ripple " + duration + "s cubic-bezier(0.15,0.6,0.25,1) forwards," +
+      "header-wobble " + (3 + Math.random() * 2) + "s ease-in-out infinite;";
+    header.appendChild(r);
+    setTimeout(function () { r.remove(); }, (duration + 0.5) * 1000);
+  }
   function startAnim() { if (!animating) { animating = true; requestAnimationFrame(animate); } }
 
   function getColors() {
@@ -2469,15 +2511,6 @@
     var targetAlpha = interacting ? 0.12 : 0.05;
     revealAlpha += (targetAlpha - revealAlpha) * 0.03;
 
-    if (revealAlpha > 0.003 && cursorX >= 0) {
-      var glowR = revealR;
-      var gg = rvCtx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, glowR);
-      gg.addColorStop(0, "rgba(" + P.amber + "," + (revealAlpha * 0.5).toFixed(3) + ")");
-      gg.addColorStop(0.3, "rgba(" + P.green + "," + (revealAlpha * 0.2).toFixed(3) + ")");
-      gg.addColorStop(1, "rgba(" + P.blue + ",0)");
-      rvCtx.fillStyle = gg;
-      rvCtx.fillRect(cursorX - glowR, cursorY - glowR, glowR * 2, glowR * 2);
-    }
 
     requestAnimationFrame(animate);
   }

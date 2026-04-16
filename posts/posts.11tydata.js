@@ -31,6 +31,7 @@ module.exports = () => {
         return "/img/og/default.png";
       },
     },
+    layout: "layouts/post.njk",
     tags: ["posts"],
   };
 };

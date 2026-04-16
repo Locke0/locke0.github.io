@@ -15,12 +15,12 @@
 	</author>
 	
 	<entry>
-		<title>Why Benchmarks Lie and What We Can Do About It</title>
-		<link href="https://locke0.github.io/posts/test-og-preview/"/>
+		<title>Hello world!</title>
+		<link href="https://locke0.github.io/posts/hello-world/"/>
 		<updated>2026-04-15T00:00:00Z</updated>
-		<id>https://locke0.github.io/posts/test-og-preview/</id>
+		<id>https://locke0.github.io/posts/hello-world/</id>
 		<content type="html">
-		  &lt;p&gt;Test post for OG image preview. Delete me.&lt;/p&gt;
+		  &lt;p&gt;Hello world!&lt;/p&gt;
 
 			
 		</content>
