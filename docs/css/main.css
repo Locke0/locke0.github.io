@@ -1073,6 +1073,45 @@ hr::after {
   color: var(--text-subtle);
 }
 
+/* Post CTA — terminal-style reply prompt */
+.post-cta {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-subtle);
+  margin-top: 3em;
+  padding-top: 1.5em;
+  border-top: 1px dotted var(--border-dotted);
+}
+.post-cta a {
+  text-decoration: none;
+  color: var(--link);
+  transition: opacity 0.15s ease;
+  opacity: 0.85;
+}
+.post-cta a:hover {
+  opacity: 1;
+}
+.post-cta .prompt {
+  color: var(--link);
+  opacity: 0.7;
+  margin-right: 0.4em;
+}
+.post-cta .cta-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--link);
+  animation: blink 1.2s step-end infinite;
+}
+.post-cta .cta-hint {
+  margin-left: 0.8em;
+  color: var(--text-subtle);
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+.post-cta a:hover .cta-hint {
+  color: var(--link);
+}
+
 /* ========================================
    Subscribe / Interest Form
    ======================================== */
