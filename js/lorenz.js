@@ -83,7 +83,7 @@
 
   // --- State ---
   var mouseX = -1, mouseY = -1, cursorX = -1, cursorY = -1;
-  var isHovering = false, revealR = 130, revealAlpha = 0, animating = false, paused = false;
+  var isHovering = false, revealR = 130, revealAlpha = 0, animating = false, paused = false, inViewport = true, tabVisible = true;
   var wanderX = 0, wanderY = 0, wanderTargetX = 0, wanderTargetY = 0;
   var wanderInited = false, wanderSpeed = 0.008;
   var isTouching = false, touchFadeTimer = 0;
@@ -401,7 +401,20 @@
     header.appendChild(r);
     setTimeout(function () { r.remove(); }, (duration + 0.5) * 1000);
   }
-  function startAnim() { if (!animating) { animating = true; requestAnimationFrame(animate); } }
+  function startAnim() { if (!animating && inViewport && tabVisible) { animating = true; requestAnimationFrame(animate); } }
+
+  document.addEventListener("visibilitychange", function () {
+    tabVisible = !document.hidden;
+    if (tabVisible) startAnim();
+  });
+
+  if (typeof IntersectionObserver !== "undefined") {
+    var io = new IntersectionObserver(function (entries) {
+      inViewport = entries[0].isIntersecting;
+      if (inViewport) startAnim();
+    }, { threshold: 0 });
+    io.observe(header);
+  }
 
   function getColors() {
     return { bg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0a0a0c" };
@@ -2171,6 +2184,7 @@
   var dt = 1; // delta-time scalar: 1.0 at 60fps, 2.0 at 30fps, 0.5 at 120fps
 
   function animate(timestamp) {
+    if (!inViewport || !tabVisible) { animating = false; return; }
     if (paused) { requestAnimationFrame(animate); return; }
     // Compute dt: normalize all frame-based math to 60fps equivalent
     if (lastFrameTime > 0) {
