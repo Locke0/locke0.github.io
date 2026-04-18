@@ -44,9 +44,10 @@ const CSP = {
     // Allow fonts from Google Fonts
     ["font-src", SELF, "https://fonts.gstatic.com"],
     // Allow Google Analytics connections
+    // When re-enabling subscribe page, add "https://buttondown.com" to connect-src below
     ["connect-src", SELF, "https://www.google-analytics.com", "https://analytics.google.com"],
-    // Allow form submissions to Buttondown
-    ["form-action", SELF, "https://buttondown.com"],
+    // Form submissions — subscribe page is hidden; re-add "https://buttondown.com" when re-enabling
+    ["form-action", SELF],
 
     // To add new rules, add new array literals here or extend those above with
     // additional allowed elements.
