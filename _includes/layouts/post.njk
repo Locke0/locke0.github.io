@@ -34,7 +34,9 @@ templateClass: tmpl-post
 
 {{ content | safe }}
 
+{% if page.url.indexOf("/posts/") === 0 %}
 <p class="post-cta"><a href="mailto:yangyueresearch@gmail.com?subject={{ title | escape }}"><span class="prompt">&gt;</span> what am I missing?<span class="cta-cursor">_</span> <span class="cta-hint">↵ reply</span></a></p>
+{% endif %}
 
 <script type="application/ld+json">
 {
