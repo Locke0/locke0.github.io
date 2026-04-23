@@ -628,9 +628,10 @@ img[align="left"] {
 .professional-statement p a {
   padding: 0.1em 0.2em;
   border-radius: 2px;
+  font-style: italic;
 }
 
-.professional-statement > p:first-of-type {
+.professional-statement > p:not(.terminal-links) {
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--text-subtle);
@@ -941,6 +942,18 @@ hr::after {
   border-bottom: none;
 }
 
+/* Main title link per item — no underline (hover restores it) */
+#publications li > a,
+#projects li > a,
+#posts li > a {
+  text-decoration: none;
+}
+#publications li > a:hover,
+#projects li > a:hover,
+#posts li > a:hover {
+  text-decoration: underline;
+}
+
 #publications ul,
 #projects ul,
 #posts ul {
@@ -991,11 +1004,7 @@ hr::after {
   border-radius: 2px;
 }
 
-/* Homepage links — monospace */
-.professional-statement p a {
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-}
+/* Homepage links — inherit size/font from parent paragraph */
 
 
 /* Terminal-style links row */
